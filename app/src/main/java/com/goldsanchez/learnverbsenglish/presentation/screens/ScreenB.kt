@@ -12,8 +12,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
+import androidx.compose.material.icons.rounded.RecordVoiceOver
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -23,6 +26,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.goldsanchez.learnverbsenglish.domain.model.Verb
 import com.goldsanchez.learnverbsenglish.presentation.VerbViewModel
+import com.goldsanchez.learnverbsenglish.presentation.components.AdBanner
 import com.goldsanchez.learnverbsenglish.presentation.components.VerbBox
 import com.goldsanchez.learnverbsenglish.presentation.utils.getAnnotatedString
 import com.goldsanchez.learnverbsenglish.ui.theme.*
@@ -32,6 +36,8 @@ import com.goldsanchez.learnverbsenglish.ui.theme.*
 fun ScreenB(verbIndex: Int, viewModel: VerbViewModel, tts: TextToSpeech?, onBack: () -> Unit, onNavigate: (Int) -> Unit) {
     val verb = viewModel.getVerbByIndex(verbIndex) ?: return
     val scrollState = rememberScrollState()
+    // Observamos si los anuncios han sido eliminados
+    val isAdsRemoved by viewModel.isAdsRemoved.collectAsState()
 
     Scaffold(
         topBar = {
@@ -42,74 +48,115 @@ fun ScreenB(verbIndex: Int, viewModel: VerbViewModel, tts: TextToSpeech?, onBack
                         Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "Back", tint = Color.White)
                     }
                 },
+                actions = {
+                    FilledIconButton(
+                        onClick = {
+                            tts?.let {
+                                it.speak(verb.infinitive, TextToSpeech.QUEUE_FLUSH, null, "infinitive")
+                                it.playSilentUtterance(500, TextToSpeech.QUEUE_ADD, null)
+                                it.speak(verb.past, TextToSpeech.QUEUE_ADD, null, "past")
+                                it.playSilentUtterance(500, TextToSpeech.QUEUE_ADD, null)
+                                it.speak(verb.participle, TextToSpeech.QUEUE_ADD, null, "participle")
+                                it.playSilentUtterance(500, TextToSpeech.QUEUE_ADD, null)
+                                it.speak(verb.exampleInfinitive, TextToSpeech.QUEUE_ADD, null, "exampleInfinitive")
+                                it.playSilentUtterance(500, TextToSpeech.QUEUE_ADD, null)
+                                it.speak(verb.examplePast, TextToSpeech.QUEUE_ADD, null, "examplePast")
+                                it.playSilentUtterance(500, TextToSpeech.QUEUE_ADD, null)
+                                it.speak(verb.exampleParticiple, TextToSpeech.QUEUE_ADD, null, "exampleParticiple")
+                            }
+                        },
+                        modifier = Modifier.padding(end = 8.dp).size(40.dp),
+                        colors = IconButtonDefaults.filledIconButtonColors(
+                            containerColor = Color.White.copy(alpha = 0.2f),
+                            contentColor = Color.White
+                        )
+                    ) {
+                        Icon(
+                            Icons.Rounded.RecordVoiceOver, 
+                            contentDescription = "Reproducir toda la ficha",
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
                     containerColor = AccentColor
                 )
             )
         },
         bottomBar = {
-            Row(
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(bottom = 32.dp, start = 24.dp, end = 24.dp, top = 12.dp)
-                    .navigationBarsPadding(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    .background(BackgroundColor)
+                    .navigationBarsPadding()
             ) {
-                Surface(
-                    onClick = { if (verbIndex > 0) onNavigate(verbIndex - 1) },
-                    enabled = verbIndex > 0,
-                    shape = RoundedCornerShape(16.dp),
-                    color = if (verbIndex > 0) ColorList[0] else Color.LightGray.copy(alpha = 0.2f),
-                    modifier = Modifier.weight(1f),
-                    shadowElevation = if (verbIndex > 0) 4.dp else 0.dp
-                ) {
-                    Row(
-                        modifier = Modifier.padding(vertical = 14.dp),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            Icons.AutoMirrored.Filled.KeyboardArrowLeft, 
-                            contentDescription = null, 
-                            tint = if (verbIndex > 0) PrimaryColor else Color.Gray,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text(
-                            "Anterior", 
-                            fontWeight = FontWeight.Bold, 
-                            color = if (verbIndex > 0) PrimaryColor else Color.Gray,
-                            fontSize = 14.sp
-                        )
-                    }
+                // SOLO mostramos el anuncio si NO han sido eliminados
+                if (!isAdsRemoved) {
+                    AdBanner(modifier = Modifier.padding(vertical = 12.dp))
                 }
-
-                Surface(
-                    onClick = { if (verbIndex < viewModel.getTotalVerbs() - 1) onNavigate(verbIndex + 1) },
-                    enabled = verbIndex < viewModel.getTotalVerbs() - 1,
-                    shape = RoundedCornerShape(16.dp),
-                    color = if (verbIndex < viewModel.getTotalVerbs() - 1) ColorList[1] else Color.LightGray.copy(alpha = 0.2f),
-                    modifier = Modifier.weight(1f),
-                    shadowElevation = if (verbIndex < viewModel.getTotalVerbs() - 1) 4.dp else 0.dp
+                
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 32.dp, start = 24.dp, end = 24.dp, top = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    Row(
-                        modifier = Modifier.padding(vertical = 14.dp),
-                        horizontalArrangement = Arrangement.Center,
-                        verticalAlignment = Alignment.CenterVertically
+                    Surface(
+                        onClick = { if (verbIndex > 0) onNavigate(verbIndex - 1) },
+                        enabled = verbIndex > 0,
+                        shape = RoundedCornerShape(16.dp),
+                        color = if (verbIndex > 0) ColorList[0] else Color.LightGray.copy(alpha = 0.2f),
+                        modifier = Modifier.weight(1f),
+                        shadowElevation = if (verbIndex > 0) 4.dp else 0.dp
                     ) {
-                        Text(
-                            "Siguiente", 
-                            fontWeight = FontWeight.Bold, 
-                            color = if (verbIndex < viewModel.getTotalVerbs() - 1) PrimaryColor else Color.Gray,
-                            fontSize = 14.sp
-                        )
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Icon(
-                            Icons.AutoMirrored.Filled.KeyboardArrowRight, 
-                            contentDescription = null, 
-                            tint = if (verbIndex < viewModel.getTotalVerbs() - 1) PrimaryColor else Color.Gray,
-                            modifier = Modifier.size(20.dp)
-                        )
+                        Row(
+                            modifier = Modifier.padding(vertical = 14.dp),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.KeyboardArrowLeft, 
+                                contentDescription = null, 
+                                tint = if (verbIndex > 0) PrimaryColor else Color.Gray,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                "Anterior", 
+                                fontWeight = FontWeight.Bold, 
+                                color = if (verbIndex > 0) PrimaryColor else Color.Gray,
+                                fontSize = 14.sp
+                            )
+                        }
+                    }
+
+                    Surface(
+                        onClick = { if (verbIndex < viewModel.getTotalVerbs() - 1) onNavigate(verbIndex + 1) },
+                        enabled = verbIndex < viewModel.getTotalVerbs() - 1,
+                        shape = RoundedCornerShape(16.dp),
+                        color = if (verbIndex < viewModel.getTotalVerbs() - 1) ColorList[1] else Color.LightGray.copy(alpha = 0.2f),
+                        modifier = Modifier.weight(1f),
+                        shadowElevation = if (verbIndex < viewModel.getTotalVerbs() - 1) 4.dp else 0.dp
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(vertical = 14.dp),
+                            horizontalArrangement = Arrangement.Center,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                "Siguiente", 
+                                fontWeight = FontWeight.Bold, 
+                                color = if (verbIndex < viewModel.getTotalVerbs() - 1) PrimaryColor else Color.Gray,
+                                fontSize = 14.sp
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Icon(
+                                Icons.AutoMirrored.Filled.KeyboardArrowRight, 
+                                contentDescription = null, 
+                                tint = if (verbIndex < viewModel.getTotalVerbs() - 1) PrimaryColor else Color.Gray,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
                     }
                 }
             }

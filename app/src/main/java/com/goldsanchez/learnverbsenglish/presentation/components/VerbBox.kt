@@ -15,6 +15,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.goldsanchez.learnverbsenglish.ui.theme.AccentColor
@@ -41,19 +42,31 @@ fun VerbBox(text: String, label: String, color: Color, modifier: Modifier = Modi
                     )
                 )
             ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    modifier = Modifier.padding(8.dp)
+                ) {
+                    // Si el texto tiene un slash, lo dividimos en dos líneas para que quepa mejor
+                    val displayText = if (text.contains("/")) {
+                        text.replace("/", "/\n")
+                    } else {
+                        text
+                    }
+                    
                     Text(
-                        text = text,
-                        fontSize = 17.sp,
+                        text = displayText,
+                        fontSize = if (text.length > 12) 14.sp else 16.sp,
                         fontWeight = FontWeight.Bold,
-                        color = PrimaryColor
+                        color = PrimaryColor,
+                        textAlign = TextAlign.Center,
+                        lineHeight = 18.sp
                     )
-                    Spacer(modifier = Modifier.height(10.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
                     Icon(
                         Icons.AutoMirrored.Filled.VolumeUp,
                         contentDescription = null,
                         tint = AccentColor.copy(alpha = 0.6f),
-                        modifier = Modifier.size(22.dp)
+                        modifier = Modifier.size(18.dp)
                     )
                 }
             }
