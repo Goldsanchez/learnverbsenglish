@@ -1,5 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-
     <style name="Theme.Learnverbsenglish" parent="android:Theme.Material.Light.NoActionBar" />
+
+    <!-- Theme for the Splash Screen -->
+    <style name="Theme.App.Starting" parent="Theme.SplashScreen">
+        <!-- Background color of the splash screen -->
+        <item name="windowSplashScreenBackground">#3F51B5</item> <!-- AccentColor (Indigo) -->
+        <!-- Icon to be displayed in the center -->
+        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+        <!-- The theme to use after the splash screen is finished -->
+        <item name="postSplashScreenTheme">@style/Theme.Learnverbsenglish</item>
+    </style>
 </resources>

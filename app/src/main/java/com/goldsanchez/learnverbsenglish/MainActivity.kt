@@ -5,6 +5,7 @@ import android.speech.tts.TextToSpeech
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -20,6 +21,9 @@ class MainActivity : ComponentActivity() {
     private lateinit var billingRepository: BillingRepository
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        // Install Splash Screen BEFORE super.onCreate()
+        installSplashScreen()
+        
         super.onCreate(savedInstanceState)
         
         // Initialize Mobile Ads SDK
