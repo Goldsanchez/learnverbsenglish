@@ -21,19 +21,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.goldsanchez.learnverbsenglish.domain.model.Verb
-import com.goldsanchez.learnverbsenglish.presentation.IrregularVerbViewModel
+import com.goldsanchez.learnverbsenglish.presentation.PhrasalVerbViewModel
 import com.goldsanchez.learnverbsenglish.presentation.components.AdBanner
-import com.goldsanchez.learnverbsenglish.presentation.components.VerbBox
 import com.goldsanchez.learnverbsenglish.presentation.utils.getAnnotatedString
 import com.goldsanchez.learnverbsenglish.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ScreenB(verbIndex: Int, viewModel: IrregularVerbViewModel, tts: TextToSpeech?, onBack: () -> Unit, onNavigate: (Int) -> Unit) {
+fun PhrasalScreenB(verbIndex: Int, viewModel: PhrasalVerbViewModel, tts: TextToSpeech?, onBack: () -> Unit, onNavigate: (Int) -> Unit) {
     val verb = viewModel.getVerbByIndex(verbIndex) ?: return
     val scrollState = rememberScrollState()
     val isAdsRemoved by viewModel.isAdsRemoved.collectAsState()
@@ -51,17 +52,13 @@ fun ScreenB(verbIndex: Int, viewModel: IrregularVerbViewModel, tts: TextToSpeech
                     FilledIconButton(
                         onClick = {
                             tts?.let {
-                                it.speak(verb.infinitive, TextToSpeech.QUEUE_FLUSH, null, "infinitive")
+                                it.speak(verb.verb, TextToSpeech.QUEUE_FLUSH, null, "verb")
                                 it.playSilentUtterance(500, TextToSpeech.QUEUE_ADD, null)
-                                it.speak(verb.past, TextToSpeech.QUEUE_ADD, null, "past")
-                                it.playSilentUtterance(500, TextToSpeech.QUEUE_ADD, null)
-                                it.speak(verb.participle, TextToSpeech.QUEUE_ADD, null, "participle")
-                                it.playSilentUtterance(500, TextToSpeech.QUEUE_ADD, null)
-                                it.speak(verb.exampleInfinitive, TextToSpeech.QUEUE_ADD, null, "exampleInfinitive")
+                                it.speak(verb.examplePresent, TextToSpeech.QUEUE_ADD, null, "examplePresent")
                                 it.playSilentUtterance(500, TextToSpeech.QUEUE_ADD, null)
                                 it.speak(verb.examplePast, TextToSpeech.QUEUE_ADD, null, "examplePast")
                                 it.playSilentUtterance(500, TextToSpeech.QUEUE_ADD, null)
-                                it.speak(verb.exampleParticiple, TextToSpeech.QUEUE_ADD, null, "exampleParticiple")
+                                it.speak(verb.exampleCommon, TextToSpeech.QUEUE_ADD, null, "exampleCommon")
                             }
                         },
                         modifier = Modifier.padding(end = 8.dp).size(40.dp),
@@ -105,55 +102,35 @@ fun ScreenB(verbIndex: Int, viewModel: IrregularVerbViewModel, tts: TextToSpeech
                         shape = RoundedCornerShape(16.dp),
                         color = if (verbIndex > 0) ColorList[0] else Color.LightGray.copy(alpha = 0.2f),
                         modifier = Modifier.weight(1f),
-                        shadowElevation = if (verbIndex > 0) 2.dp else 0.dp
+                        shadowElevation = if (verbIndex > 0) 4.dp else 0.dp
                     ) {
                         Row(
                             modifier = Modifier.padding(vertical = 14.dp),
                             horizontalArrangement = Arrangement.Center,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(
-                                Icons.AutoMirrored.Filled.KeyboardArrowLeft, 
-                                contentDescription = null, 
-                                tint = if (verbIndex > 0) PrimaryColor else Color.Gray,
-                                modifier = Modifier.size(20.dp)
-                            )
+                            Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = null, tint = if (verbIndex > 0) PrimaryColor else Color.Gray, modifier = Modifier.size(20.dp))
                             Spacer(modifier = Modifier.width(4.dp))
-                            Text(
-                                "Anterior", 
-                                fontWeight = FontWeight.Bold, 
-                                color = if (verbIndex > 0) PrimaryColor else Color.Gray,
-                                fontSize = 14.sp
-                            )
+                            Text("Anterior", fontWeight = FontWeight.Bold, color = if (verbIndex > 0) PrimaryColor else Color.Gray, fontSize = 14.sp)
                         }
                     }
 
                     Surface(
-                        onClick = { if (verbIndex < viewModel.getTotalVerbs() - 1) onNavigate(verbIndex + 1) },
-                        enabled = verbIndex < viewModel.getTotalVerbs() - 1,
+                        onClick = { if (verbIndex < viewModel.phrasalVerbs.size - 1) onNavigate(verbIndex + 1) },
+                        enabled = verbIndex < viewModel.phrasalVerbs.size - 1,
                         shape = RoundedCornerShape(16.dp),
-                        color = if (verbIndex < viewModel.getTotalVerbs() - 1) ColorList[1] else Color.LightGray.copy(alpha = 0.2f),
+                        color = if (verbIndex < viewModel.phrasalVerbs.size - 1) ColorList[1] else Color.LightGray.copy(alpha = 0.2f),
                         modifier = Modifier.weight(1f),
-                        shadowElevation = if (verbIndex < viewModel.getTotalVerbs() - 1) 2.dp else 0.dp
+                        shadowElevation = if (verbIndex < viewModel.phrasalVerbs.size - 1) 2.dp else 0.dp
                     ) {
                         Row(
                             modifier = Modifier.padding(vertical = 14.dp),
                             horizontalArrangement = Arrangement.Center,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(
-                                "Siguiente", 
-                                fontWeight = FontWeight.Bold, 
-                                color = if (verbIndex < viewModel.getTotalVerbs() - 1) PrimaryColor else Color.Gray,
-                                fontSize = 14.sp
-                            )
+                            Text("Siguiente", fontWeight = FontWeight.Bold, color = if (verbIndex < viewModel.phrasalVerbs.size - 1) PrimaryColor else Color.Gray, fontSize = 14.sp)
                             Spacer(modifier = Modifier.width(4.dp))
-                            Icon(
-                                Icons.AutoMirrored.Filled.KeyboardArrowRight, 
-                                contentDescription = null, 
-                                tint = if (verbIndex < viewModel.getTotalVerbs() - 1) PrimaryColor else Color.Gray,
-                                modifier = Modifier.size(20.dp)
-                            )
+                            Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = null, tint = if (verbIndex < viewModel.phrasalVerbs.size - 1) PrimaryColor else Color.Gray, modifier = Modifier.size(20.dp))
                         }
                     }
                 }
@@ -171,17 +148,35 @@ fun ScreenB(verbIndex: Int, viewModel: IrregularVerbViewModel, tts: TextToSpeech
         ) {
             Spacer(modifier = Modifier.height(24.dp))
 
-            Row(
+            Text(
+                text = verb.verb,
+                fontSize = 24.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = PrimaryColor
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Context Card
+            Surface(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                color = BoxBlue,
+                shape = RoundedCornerShape(24.dp),
+                shadowElevation = 2.dp
             ) {
-                VerbBox(verb.infinitive, "Infinitive", BoxBlue, Modifier.weight(1f)) { tts?.speak(verb.infinitive, TextToSpeech.QUEUE_FLUSH, null, null) }
-                VerbBox(verb.past, "Past", BoxGreen, Modifier.weight(1f)) { tts?.speak(verb.past, TextToSpeech.QUEUE_FLUSH, null, null) }
-                VerbBox(verb.participle, "Participle", BoxOrange, Modifier.weight(1f)) { tts?.speak(verb.participle, TextToSpeech.QUEUE_FLUSH, null, null) }
+                Column(modifier = Modifier.padding(20.dp)) {
+                    Text(
+                        text = verb.usageContext,
+                        fontSize = 14.sp,
+                        color = SpanishTextColor,
+                        lineHeight = 20.sp
+                    )
+                }
             }
 
-            Spacer(modifier = Modifier.height(40.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
+            // Examples Section
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -206,18 +201,18 @@ fun ScreenB(verbIndex: Int, viewModel: IrregularVerbViewModel, tts: TextToSpeech
                 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                ExampleItemImproved("Present Form", verb.exampleInfinitive, verb.exampleInfinitiveTranslation, verb.infinitive, verb.highlightSpanishInfinitive, tts)
+                ExampleItemPhrasal("1. Presente", verb.examplePresent, verb.examplePresentTranslation, verb.verb, verb.highlightSpanishPresent, tts)
                 Spacer(modifier = Modifier.height(20.dp))
-                ExampleItemImproved("Past Simple Form", verb.examplePast, verb.examplePastTranslation, verb.past, verb.highlightSpanishPast, tts)
+                ExampleItemPhrasal("2. Pasado Simple", verb.examplePast, verb.examplePastTranslation, verb.verb, verb.highlightSpanishPast, tts)
                 Spacer(modifier = Modifier.height(20.dp))
-                ExampleItemImproved("Participle Form", verb.exampleParticiple, verb.exampleParticipleTranslation, verb.participle, verb.highlightSpanishParticiple, tts)
+                ExampleItemPhrasal("3. Participio", verb.exampleCommon, verb.exampleCommonTranslation, verb.verb, verb.highlightSpanishCommon, tts)
             }
         }
     }
 }
 
 @Composable
-fun ExampleItemImproved(label: String, english: String, spanish: String, englishVerb: String, spanishVerb: String, tts: TextToSpeech?) {
+fun ExampleItemPhrasal(label: String, english: String, spanish: String, englishVerb: String, spanishVerb: String, tts: TextToSpeech?) {
     Column(modifier = Modifier.fillMaxWidth()) {
         Text(
             label,

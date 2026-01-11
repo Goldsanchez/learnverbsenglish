@@ -8,34 +8,42 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.rounded.WorkspacePremium
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.goldsanchez.learnverbsenglish.domain.model.Verb
-import com.goldsanchez.learnverbsenglish.presentation.IrregularVerbViewModel
+import com.goldsanchez.learnverbsenglish.domain.model.PhrasalVerb
+import com.goldsanchez.learnverbsenglish.presentation.PhrasalVerbViewModel
 import com.goldsanchez.learnverbsenglish.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun ScreenA(viewModel: IrregularVerbViewModel, onBack: () -> Unit, onVerbClick: (Int) -> Unit) {
+fun PhrasalScreenA(viewModel: PhrasalVerbViewModel, onBack: () -> Unit, onVerbClick: (Int) -> Unit) {
+    val isAdsRemoved by viewModel.isAdsRemoved.collectAsState()
+
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { 
-                    Text(
-                        "Verbos Irregulares", 
-                        fontWeight = FontWeight.SemiBold, 
-                        color = Color.White
-                    )
-                },
+                title = { Text("Phrasal Verbs", fontWeight = FontWeight.SemiBold, color = Color.White) },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "Back", tint = Color.White)
+                    }
+                },
+                actions = {
+                    if (isAdsRemoved) {
+                        Icon(
+                            Icons.Rounded.WorkspacePremium, 
+                            contentDescription = "Premium", 
+                            tint = Color(0xFFFFD700), 
+                            modifier = Modifier.padding(end = 12.dp).size(24.dp)
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
@@ -56,7 +64,7 @@ fun ScreenA(viewModel: IrregularVerbViewModel, onBack: () -> Unit, onVerbClick: 
                 value = viewModel.searchQuery,
                 onValueChange = { viewModel.onSearchQueryChange(it) },
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text("Buscar verbo...", color = Color.Gray) },
+                placeholder = { Text("Buscar phrasal verb...", color = Color.Gray) },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = AccentColor) },
                 shape = RoundedCornerShape(16.dp),
                 colors = OutlinedTextFieldDefaults.colors(
@@ -72,9 +80,9 @@ fun ScreenA(viewModel: IrregularVerbViewModel, onBack: () -> Unit, onVerbClick: 
                 modifier = Modifier.weight(1f),
                 contentPadding = PaddingValues(bottom = 20.dp)
             ) {
-                itemsIndexed(viewModel.filteredVerbs) { _, verb ->
-                    val actualIndex = viewModel.verbs.indexOf(verb)
-                    VerbItem(verb, actualIndex, onVerbClick)
+                itemsIndexed(viewModel.filteredVerbs) { _, phrasalVerb ->
+                    val actualIndex = viewModel.phrasalVerbs.indexOf(phrasalVerb)
+                    PhrasalVerbItem(phrasalVerb, actualIndex, onVerbClick)
                 }
             }
         }
@@ -82,7 +90,7 @@ fun ScreenA(viewModel: IrregularVerbViewModel, onBack: () -> Unit, onVerbClick: 
 }
 
 @Composable
-fun VerbItem(verb: Verb, index: Int, onClick: (Int) -> Unit) {
+fun PhrasalVerbItem(verb: PhrasalVerb, index: Int, onClick: (Int) -> Unit) {
     val bgColor = ColorList[index % ColorList.size]
     
     Surface(
@@ -93,13 +101,15 @@ fun VerbItem(verb: Verb, index: Int, onClick: (Int) -> Unit) {
         shadowElevation = 1.dp
     ) {
         Row(
-            modifier = Modifier.padding(20.dp).fillMaxWidth(),
+            modifier = Modifier
+                .padding(20.dp)
+                .fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column {
                 Text(
-                    text = verb.infinitive,
+                    text = verb.verb,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
                     color = PrimaryColor
