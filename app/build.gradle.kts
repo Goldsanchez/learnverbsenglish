@@ -12,19 +12,28 @@ android {
         applicationId = "com.goldsanchez.learnverbsenglish"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 4
+        versionName = "4"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            // 1. Activa la optimización y ofuscación de código
+            isMinifyEnabled = true
+            // 2. Elimina recursos no utilizados para reducir el tamaño
+            isShrinkResources = true
+            
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
+            
+            // 3. Genera los símbolos de depuración para código nativo (AdMob/Billing)
+            ndk {
+                debugSymbolLevel = "FULL"
+            }
         }
     }
     compileOptions {

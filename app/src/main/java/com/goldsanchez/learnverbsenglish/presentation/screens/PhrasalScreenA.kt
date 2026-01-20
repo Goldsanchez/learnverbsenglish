@@ -8,13 +8,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.rounded.WorkspacePremium
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -25,8 +23,6 @@ import com.goldsanchez.learnverbsenglish.ui.theme.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PhrasalScreenA(viewModel: PhrasalVerbViewModel, onBack: () -> Unit, onVerbClick: (Int) -> Unit) {
-    val isAdsRemoved by viewModel.isAdsRemoved.collectAsState()
-
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -34,16 +30,6 @@ fun PhrasalScreenA(viewModel: PhrasalVerbViewModel, onBack: () -> Unit, onVerbCl
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "Back", tint = Color.White)
-                    }
-                },
-                actions = {
-                    if (isAdsRemoved) {
-                        Icon(
-                            Icons.Rounded.WorkspacePremium, 
-                            contentDescription = "Premium", 
-                            tint = Color(0xFFFFD700), 
-                            modifier = Modifier.padding(end = 12.dp).size(24.dp)
-                        )
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
