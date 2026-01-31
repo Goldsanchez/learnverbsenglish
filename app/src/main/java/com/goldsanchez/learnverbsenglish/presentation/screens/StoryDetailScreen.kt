@@ -14,8 +14,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Headset
 import androidx.compose.material.icons.filled.Stop
+import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
@@ -30,7 +32,6 @@ import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextDecoration
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.goldsanchez.learnverbsenglish.presentation.StoryViewModel
@@ -51,6 +52,8 @@ fun StoryDetailScreen(
     val story = viewModel.getStoryById(storyId) ?: return
     var isPlaying by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    val completedStories by viewModel.completedStories.collectAsState()
+    val isLearned = completedStories.contains(storyId)
     
     val pagerState = rememberPagerState(pageCount = { 2 })
     val coroutineScope = rememberCoroutineScope()
@@ -74,10 +77,7 @@ fun StoryDetailScreen(
                     IconButton(
                         onClick = {
                             if (!isAdsRemoved) {
-                                // Mostramos el intersticial solo si no es premium
-                                AdManager.showInterstitial(context as Activity) {
-                                    onBack()
-                                }
+                                AdManager.showInterstitial(context as Activity) { onBack() }
                             } else {
                                 onBack()
                             }
@@ -87,9 +87,7 @@ fun StoryDetailScreen(
                     }
                 },
                 actions = {
-                    val playIconColor by animateColorAsState(
-                        if (isPlaying) Color(0xFFFFD700) else Color.White, label = ""
-                    )
+                    val playIconColor by animateColorAsState(if (isPlaying) Color(0xFFFFD700) else Color.White, label = "")
                     IconButton(
                         onClick = {
                             if (isPlaying) {
@@ -101,11 +99,7 @@ fun StoryDetailScreen(
                             }
                         }
                     ) {
-                        Icon(
-                            imageVector = if (isPlaying) Icons.Default.Stop else Icons.Default.Headset,
-                            contentDescription = "Audio",
-                            tint = playIconColor
-                        )
+                        Icon(imageVector = if (isPlaying) Icons.Default.Stop else Icons.Default.Headset, contentDescription = "Audio", tint = playIconColor)
                     }
                 },
                 colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = AccentColor)
@@ -114,33 +108,18 @@ fun StoryDetailScreen(
         containerColor = Color(0xFFF5F5F5)
     ) { padding ->
         Column(modifier = Modifier.fillMaxSize().padding(padding)) {
-            Surface(
-                color = Color.White,
-                shadowElevation = 2.dp
-            ) {
+            Surface(color = Color.White, shadowElevation = 2.dp) {
                 TabRow(
                     selectedTabIndex = pagerState.currentPage,
                     containerColor = Color.White,
                     contentColor = AccentColor,
                     divider = {},
                     indicator = { tabPositions ->
-                        TabRowDefaults.SecondaryIndicator(
-                            Modifier.tabIndicatorOffset(tabPositions[pagerState.currentPage]),
-                            color = AccentColor,
-                            height = 3.dp
-                        )
+                        TabRowDefaults.SecondaryIndicator(Modifier.tabIndicatorOffset(tabPositions[pagerState.currentPage]), color = AccentColor, height = 3.dp)
                     }
                 ) {
-                    Tab(
-                        selected = pagerState.currentPage == 0,
-                        onClick = { coroutineScope.launch { pagerState.animateScrollToPage(0) } },
-                        text = { Text("English", style = TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Bold)) }
-                    )
-                    Tab(
-                        selected = pagerState.currentPage == 1,
-                        onClick = { coroutineScope.launch { pagerState.animateScrollToPage(1) } },
-                        text = { Text("Traducción", style = TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Bold)) }
-                    )
+                    Tab(selected = pagerState.currentPage == 0, onClick = { coroutineScope.launch { pagerState.animateScrollToPage(0) } }, text = { Text("English", style = TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Bold)) })
+                    Tab(selected = pagerState.currentPage == 1, onClick = { coroutineScope.launch { pagerState.animateScrollToPage(1) } }, text = { Text("Traducción", style = TextStyle(fontSize = 14.sp, fontWeight = FontWeight.Bold)) })
                 }
             }
 
@@ -151,7 +130,7 @@ fun StoryDetailScreen(
             ) { page ->
                 val scrollState = rememberScrollState()
                 val scrollProgress = if (scrollState.maxValue > 0) {
-                    scrollState.value / scrollState.maxValue.toFloat()
+                    scrollState.value.toFloat() / scrollState.maxValue.toFloat()
                 } else 0f
 
                 Box(modifier = Modifier.fillMaxSize()) {
@@ -165,24 +144,13 @@ fun StoryDetailScreen(
                         shadowElevation = 4.dp
                     ) {
                         Column(modifier = Modifier.fillMaxSize()) {
-                            Column(
-                                modifier = Modifier.padding(horizontal = 24.dp).padding(top = 16.dp),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                if (!isAdsRemoved) {
-                                    AdBanner(modifier = Modifier.padding(bottom = 12.dp))
-                                }
+                            Column(modifier = Modifier.padding(horizontal = 24.dp).padding(top = 16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+                                if (!isAdsRemoved) AdBanner(modifier = Modifier.padding(bottom = 12.dp))
                                 StylishLine()
                             }
                             
-                            Box(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .verticalScroll(scrollState)
-                                    .padding(horizontal = 24.dp, vertical = 24.dp)
-                            ) {
+                            Box(modifier = Modifier.weight(1f).verticalScroll(scrollState).padding(horizontal = 24.dp, vertical = 24.dp)) {
                                 val fullText = if (page == 0) story.content else story.spanishContent
-                                
                                 if (fullText.isNotEmpty()) {
                                     val annotatedContent = buildAnnotatedString {
                                         append(fullText)
@@ -190,30 +158,12 @@ fun StoryDetailScreen(
                                             val target = if (page == 0) keyword.word else keyword.spanishWord
                                             var index = fullText.indexOf(target, 0, ignoreCase = true)
                                             while (index != -1) {
-                                                addStyle(
-                                                    style = SpanStyle(
-                                                        color = AccentColor, 
-                                                        fontWeight = FontWeight.Bold,
-                                                        textDecoration = TextDecoration.Underline
-                                                    ),
-                                                    start = index,
-                                                    end = index + target.length
-                                                )
+                                                addStyle(style = SpanStyle(color = AccentColor, fontWeight = FontWeight.Bold, textDecoration = TextDecoration.Underline), start = index, end = index + target.length)
                                                 index = fullText.indexOf(target, index + 1, ignoreCase = true)
                                             }
                                         }
                                     }
-
-                                    Text(
-                                        text = annotatedContent,
-                                        style = TextStyle(
-                                            fontSize = 20.sp,
-                                            lineHeight = 36.sp,
-                                            fontFamily = FontFamily.Serif,
-                                            color = if (page == 0) Color(0xFF1E293B) else Color(0xFF475569),
-                                        ),
-                                        modifier = Modifier.fillMaxWidth()
-                                    )
+                                    Text(text = annotatedContent, style = TextStyle(fontSize = 20.sp, lineHeight = 36.sp, fontFamily = FontFamily.Serif, color = if (page == 0) Color(0xFF1E293B) else Color(0xFF475569)), modifier = Modifier.fillMaxWidth())
                                 }
                             }
                             
@@ -221,24 +171,40 @@ fun StoryDetailScreen(
                                 modifier = Modifier.padding(horizontal = 24.dp).padding(bottom = 16.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally
                             ) {
-                                StylishLine()
-                                if (!isAdsRemoved) {
-                                    Spacer(modifier = Modifier.height(12.dp))
-                                    AdBanner()
+                                // BOTÓN DE APRENDIDO (MANUAL)
+                                Surface(
+                                    onClick = { viewModel.toggleStoryProgress(storyId) }, // CORRECCIÓN: Nombre de función sincronizado
+                                    color = if (isLearned) Color(0xFF4CAF50) else Color.Transparent,
+                                    shape = RoundedCornerShape(12.dp),
+                                    border = if (!isLearned) BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.5f)) else null,
+                                    modifier = Modifier.padding(bottom = 16.dp)
+                                ) {
+                                    Row(
+                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text(
+                                            text = "Leída", 
+                                            fontSize = 14.sp, 
+                                            fontWeight = FontWeight.Bold, 
+                                            color = if (isLearned) Color.White else Color.Gray
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Icon(
+                                            imageVector = if (isLearned) Icons.Filled.CheckCircle else Icons.Outlined.CheckCircle,
+                                            contentDescription = null,
+                                            tint = if (isLearned) Color.White else Color.Gray.copy(alpha = 0.4f),
+                                            modifier = Modifier.size(20.dp)
+                                        )
+                                    }
                                 }
+
+                                StylishLine()
+                                if (!isAdsRemoved) { Spacer(modifier = Modifier.height(12.dp)); AdBanner() }
                             }
                         }
                     }
-
-                    LinearProgressIndicator(
-                        progress = { scrollProgress },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(3.dp)
-                            .align(Alignment.TopCenter),
-                        color = AccentColor,
-                        trackColor = Color.Transparent,
-                    )
+                    LinearProgressIndicator(progress = { scrollProgress }, modifier = Modifier.fillMaxWidth().height(3.dp).align(Alignment.TopCenter), color = AccentColor, trackColor = Color.Transparent)
                 }
             }
         }
@@ -247,48 +213,9 @@ fun StoryDetailScreen(
 
 @Composable
 fun StylishLine(modifier: Modifier = Modifier) {
-    Row(
-        modifier = modifier.fillMaxWidth(0.4f),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.Center
-    ) {
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .height(1.dp)
-                .background(
-                    brush = Brush.horizontalGradient(
-                        colors = listOf(Color.Transparent, AccentColor.copy(alpha = 0.3f))
-                    )
-                )
-        )
-        Box(
-            modifier = Modifier
-                .padding(horizontal = 8.dp)
-                .size(4.dp)
-                .background(AccentColor.copy(alpha = 0.5f), CircleShape)
-        )
-        Box(
-            modifier = Modifier
-                .weight(1f)
-                .height(1.dp)
-                .background(
-                    brush = Brush.horizontalGradient(
-                        colors = listOf(AccentColor.copy(alpha = 0.3f), Color.Transparent)
-                    )
-                )
-        )
+    Row(modifier = modifier.fillMaxWidth(0.4f), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.Center) {
+        Box(modifier = Modifier.weight(1f).height(1.dp).background(brush = Brush.horizontalGradient(colors = listOf(Color.Transparent, AccentColor.copy(alpha = 0.3f)))))
+        Box(modifier = Modifier.padding(horizontal = 8.dp).size(4.dp).background(AccentColor.copy(alpha = 0.5f), CircleShape))
+        Box(modifier = Modifier.weight(1f).height(1.dp).background(brush = Brush.horizontalGradient(colors = listOf(AccentColor.copy(alpha = 0.3f), Color.Transparent))))
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun StoryDetailScreenPreview() {
-    StoryDetailScreen(
-        storyId = "1",
-        viewModel = com.goldsanchez.learnverbsenglish.presentation.StoryViewModel(),
-        isAdsRemoved = false,
-        tts = null,
-        onBack = {}
-    )
 }

@@ -1,6 +1,7 @@
 package com.goldsanchez.learnverbsenglish.presentation.screens
 
 import android.speech.tts.TextToSpeech
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -13,11 +14,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
 import androidx.compose.material.icons.automirrored.filled.VolumeUp
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.outlined.CheckCircle
 import androidx.compose.material.icons.rounded.RecordVoiceOver
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -37,6 +38,7 @@ import com.goldsanchez.learnverbsenglish.ui.theme.*
 fun ScreenB(verbIndex: Int, viewModel: IrregularVerbViewModel, tts: TextToSpeech?, onBack: () -> Unit) {
     val pagerState = rememberPagerState(initialPage = verbIndex, pageCount = { viewModel.verbs.size })
     val isAdsRemoved by viewModel.isAdsRemoved.collectAsState()
+    val learnedVerbs by viewModel.learnedVerbs.collectAsState()
 
     Scaffold(
         topBar = {
@@ -97,6 +99,7 @@ fun ScreenB(verbIndex: Int, viewModel: IrregularVerbViewModel, tts: TextToSpeech
         ) { page ->
             val verb = viewModel.verbs[page]
             val scrollState = rememberScrollState()
+            val isLearned = learnedVerbs.contains(verb.infinitive)
             
             Column(
                 modifier = Modifier
@@ -127,9 +130,43 @@ fun ScreenB(verbIndex: Int, viewModel: IrregularVerbViewModel, tts: TextToSpeech
                         .fillMaxWidth()
                         .padding(bottom = 40.dp)
                 ) {
-                    Column(modifier = Modifier.padding(start = 4.dp)) {
-                        Text("EXAMPLES", fontSize = 13.sp, fontWeight = FontWeight.Black, color = AccentColor, letterSpacing = 1.5.sp)
-                        Box(modifier = Modifier.padding(top = 4.dp).width(32.dp).height(3.dp).background(AccentColor, RoundedCornerShape(2.dp)))
+                    // Linea EXAMPLES con botón Aprendido a la derecha
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text("EXAMPLES", fontSize = 13.sp, fontWeight = FontWeight.Black, color = AccentColor, letterSpacing = 1.5.sp)
+                            Box(modifier = Modifier.padding(top = 4.dp).width(32.dp).height(3.dp).background(AccentColor, RoundedCornerShape(2.dp)))
+                        }
+                        
+                        // Botón de Aprendido
+                        Surface(
+                            onClick = { viewModel.toggleLearned(verb.infinitive) },
+                            color = if (isLearned) Color(0xFF4CAF50) else Color.Transparent,
+                            shape = RoundedCornerShape(12.dp),
+                            border = if (!isLearned) BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.5f)) else null
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "Aprendido", 
+                                    fontSize = 12.sp, 
+                                    fontWeight = FontWeight.Bold, 
+                                    color = if (isLearned) Color.White else Color.Gray
+                                )
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Icon(
+                                    imageVector = if (isLearned) Icons.Filled.CheckCircle else Icons.Outlined.CheckCircle,
+                                    contentDescription = null,
+                                    tint = if (isLearned) Color.White else Color.Gray.copy(alpha = 0.4f),
+                                    modifier = Modifier.size(16.dp)
+                                )
+                            }
+                        }
                     }
                     
                     Spacer(modifier = Modifier.height(24.dp))

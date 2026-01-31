@@ -24,6 +24,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -40,21 +41,24 @@ import com.revenuecat.purchases.Package
 @Composable
 fun CategoryScreen(
     viewModel: IrregularVerbViewModel,
+    phrasalLearnedCount: Int,
+    phrasalTotalCount: Int,
+    storiesLearnedCount: Int,
+    storiesTotalCount: Int,
     onIrregularClick: () -> Unit,
     onPhrasalClick: () -> Unit,
     onProfileClick: () -> Unit,
     onStoriesClick: () -> Unit
 ) {
     val isAdsRemoved by viewModel.isAdsRemoved.collectAsState()
+    val learnedVerbs by viewModel.learnedVerbs.collectAsState()
     val context = LocalContext.current
     var showPayDialog by remember { mutableStateOf(false) }
     val scrollState = rememberScrollState()
     var offerings by remember { mutableStateOf<List<Package>>(emptyList()) }
 
     LaunchedEffect(Unit) {
-        viewModel.getOfferings { list ->
-            offerings = list
-        }
+        viewModel.getOfferings { list -> offerings = list }
     }
 
     val closeDialog = { showPayDialog = false }
@@ -82,52 +86,35 @@ fun CategoryScreen(
                     modifier = Modifier.size(40.dp)
                 ) 
             },
-            title = { 
-                Text(
-                    if (isAdsRemoved) "Tu Plan Premium" else "Elige tu Plan Premium", 
-                    fontWeight = FontWeight.Bold, 
-                    textAlign = TextAlign.Center 
-                ) 
-            },
+            title = { Text(if (isAdsRemoved) "Tu Plan Premium" else "Elige tu Plan Premium", fontWeight = FontWeight.Bold, textAlign = TextAlign.Center) },
             text = {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        if (isAdsRemoved) "¡Ya eres miembro Premium! Disfrutas de una experiencia sin anuncios y apoyas el proyecto."
-                        else "Aprende sin anuncios. Tu suscripción ayuda a que la app siga mejorando cada día.", 
-                        fontSize = 14.sp, 
-                        textAlign = TextAlign.Center,
-                        lineHeight = 20.sp,
-                        color = Color.Gray
+                        if (isAdsRemoved) "¡Ya eres miembro Premium! Disfrutas de una experiencia sin anuncios."
+                        else "Aprende sin anuncios. Tu suscripción ayuda a mejorar la app.", 
+                        fontSize = 14.sp, textAlign = TextAlign.Center, color = Color.Gray
                     )
                     Spacer(modifier = Modifier.height(20.dp))
-                    
                     if (isAdsRemoved) {
                         Button(
                             onClick = {
-                                val packageName = context.packageName
                                 val intent = Intent(Intent.ACTION_VIEW).apply {
-                                    data = Uri.parse("https://play.google.com/store/account/subscriptions?package=$packageName")
+                                    data = Uri.parse("https://play.google.com/store/account/subscriptions?package=${context.packageName}")
                                 }
                                 context.startActivity(intent)
                             },
-                            colors = ButtonDefaults.buttonColors(containerColor = Color.LightGray.copy(alpha = 0.2f), contentColor = Color(0xFF212121)),
+                            colors = ButtonDefaults.buttonColors(containerColor = Color.LightGray.copy(alpha = 0.2f), contentColor = Color.Black),
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(12.dp)
-                        ) {
-                            Text("Gestionar Suscripción")
-                        }
+                        ) { Text("Gestionar Suscripción") }
                     } else {
                         offerings.forEach { pkg ->
                             SubscriptionOption(
-                                title = pkg.product.title,
-                                price = pkg.product.price.formatted,
-                                subtitle = pkg.product.description,
-                                isHighlight = pkg.identifier.contains("yearly", true),
+                                title = pkg.product.title, price = pkg.product.price.formatted,
+                                subtitle = pkg.product.description, isHighlight = pkg.identifier.contains("yearly", true),
                                 onClick = {
-                                    closeDialog()
-                                    context.findActivity()?.let { activity ->
-                                        viewModel.purchasePackage(activity, pkg)
-                                    }
+                                    showPayDialog = false
+                                    context.findActivity()?.let { activity -> viewModel.purchasePackage(activity, pkg) }
                                 }
                             )
                             Spacer(modifier = Modifier.height(12.dp))
@@ -144,97 +131,74 @@ fun CategoryScreen(
         containerColor = Color(0xFFF8F9FA),
         topBar = {
             CenterAlignedTopAppBar(
-                title = {
-                    Text(
-                        "English Mastery Verbs",
-                        style = TextStyle(
-                            fontSize = 20.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
-                    )
-                },
+                title = { Text("English Mastery Verbs", style = TextStyle(fontSize = 20.sp, fontWeight = FontWeight.Bold, color = Color.White)) },
                 navigationIcon = {
-                    IconButton(onClick = onProfileClick) {
-                        Icon(Icons.Default.Person, contentDescription = "Perfil", tint = Color.White)
-                    }
+                    IconButton(onClick = onProfileClick) { Icon(Icons.Default.Person, contentDescription = "Perfil", tint = Color.White) }
                 },
                 actions = {
                     IconButton(onClick = { showPayDialog = true }) {
-                        Icon(
-                            Icons.Rounded.WorkspacePremium,
-                            contentDescription = "Premium",
-                            tint = if (isAdsRemoved) Color(0xFFFFD700) else Color.White.copy(alpha = 0.8f),
-                            modifier = Modifier.size(26.dp)
-                        )
+                        Icon(Icons.Rounded.WorkspacePremium, contentDescription = "Premium", tint = if (isAdsRemoved) Color(0xFFFFD700) else Color.White.copy(alpha = 0.8f), modifier = Modifier.size(26.dp))
                     }
                 },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = AccentColor
-                )
+                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(containerColor = AccentColor)
             )
         }
     ) { padding ->
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .verticalScroll(scrollState)
-                .padding(horizontal = 24.dp)
+            modifier = Modifier.fillMaxSize().padding(padding).verticalScroll(scrollState).padding(horizontal = 24.dp)
         ) {
             Spacer(modifier = Modifier.height(32.dp))
             
             Text(
                 text = "¿Qué quieres aprender hoy?",
-                style = TextStyle(
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = Color(0xFF1C1B1F),
-                    textAlign = TextAlign.Center
-                ),
+                style = TextStyle(fontSize = 24.sp, fontWeight = FontWeight.ExtraBold, color = Color(0xFF1C1B1F), textAlign = TextAlign.Center),
                 modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
             )
             
             Text(
-                text = "Selecciona una categoría o lee una historia",
-                style = TextStyle(
-                    fontSize = 15.sp,
-                    color = Color.Gray,
-                    textAlign = TextAlign.Center
-                ),
+                text = "Tu progreso se guarda automáticamente",
+                style = TextStyle(fontSize = 15.sp, color = Color.Gray, textAlign = TextAlign.Center),
                 modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp)
             )
 
-            // Nueva Categoría: Short Stories
+            // Historias con Progreso Real
             CategoryLearningCard(
                 title = "Historias Cortas",
-                description = "Aprende verbos en contexto real",
+                description = "Lee y escucha historias reales",
                 icon = Icons.Default.Translate,
-                accentColor = Color(0xFF10B981), // Verde para diferenciar
-                onClick = onStoriesClick
+                accentColor = Color(0xFF10B981),
+                onClick = onStoriesClick,
+                progress = if (storiesTotalCount > 0) storiesLearnedCount.toFloat() / storiesTotalCount else 0f,
+                learnedText = "$storiesLearnedCount / $storiesTotalCount"
             )
 
             Spacer(modifier = Modifier.height(24.dp))
             Divider(color = Color.LightGray.copy(alpha = 0.5f))
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Categorías clásicas
+            // Irregulares con Progreso Real (131)
+            val learnedCountIrregular = learnedVerbs.intersect(viewModel.verbs.map { it.infinitive }.toSet()).size
             CategoryLearningCard(
                 title = "Verbos Irregulares",
                 description = "Domina las 3 formas fundamentales",
                 icon = Icons.Default.AutoAwesome,
                 accentColor = AccentColor,
-                onClick = onIrregularClick
+                onClick = onIrregularClick,
+                progress = learnedCountIrregular.toFloat() / 131f,
+                learnedText = "$learnedCountIrregular / 131"
             )
 
             Spacer(modifier = Modifier.height(20.dp))
 
+            // Phrasals con Progreso Real (100)
             CategoryLearningCard(
                 title = "Phrasal Verbs",
                 description = "Los 100 más usados en contexto",
                 icon = Icons.Default.MenuBook,
                 accentColor = Color(0xFFE91E63),
-                onClick = onPhrasalClick
+                onClick = onPhrasalClick,
+                progress = phrasalLearnedCount.toFloat() / 100f,
+                learnedText = "$phrasalLearnedCount / 100"
             )
             
             Spacer(modifier = Modifier.height(40.dp))
@@ -248,7 +212,9 @@ fun CategoryLearningCard(
     description: String,
     icon: ImageVector,
     accentColor: Color,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    progress: Float = -1f,
+    learnedText: String = ""
 ) {
     Surface(
         onClick = onClick,
@@ -257,50 +223,35 @@ fun CategoryLearningCard(
         shadowElevation = 2.dp,
         modifier = Modifier.fillMaxWidth()
     ) {
-        Row(
-            modifier = Modifier.padding(20.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(56.dp)
-                    .background(accentColor.copy(alpha = 0.1f), RoundedCornerShape(16.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = accentColor,
-                    modifier = Modifier.size(28.dp)
-                )
+        Column(modifier = Modifier.padding(20.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    modifier = Modifier.size(56.dp).background(accentColor.copy(alpha = 0.1f), RoundedCornerShape(16.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(imageVector = icon, contentDescription = null, tint = accentColor, modifier = Modifier.size(28.dp))
+                }
+                Spacer(modifier = Modifier.width(16.dp))
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(text = title, style = TextStyle(fontSize = 18.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1C1B1F)))
+                    Text(text = description, style = TextStyle(fontSize = 14.sp, color = Color.Gray))
+                }
+                Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = null, tint = Color(0xFFE0E0E0), modifier = Modifier.size(24.dp))
             }
             
-            Spacer(modifier = Modifier.width(16.dp))
-            
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    style = TextStyle(
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = Color(0xFF1C1B1F)
+            if (progress >= 0f) {
+                Spacer(modifier = Modifier.height(16.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    LinearProgressIndicator(
+                        progress = { progress },
+                        modifier = Modifier.weight(1f).height(6.dp).clip(CircleShape),
+                        color = accentColor,
+                        trackColor = accentColor.copy(alpha = 0.1f)
                     )
-                )
-                Text(
-                    text = description,
-                    style = TextStyle(
-                        fontSize = 14.sp,
-                        color = Color.Gray
-                    )
-                )
+                    Spacer(modifier = Modifier.width(12.dp))
+                    Text(text = learnedText, fontSize = 12.sp, fontWeight = FontWeight.Bold, color = accentColor)
+                }
             }
-            
-            Icon(
-                Icons.AutoMirrored.Filled.ArrowForward,
-                contentDescription = null,
-                tint = Color(0xFFE0E0E0),
-                modifier = Modifier.size(24.dp)
-            )
         }
     }
 }

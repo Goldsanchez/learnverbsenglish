@@ -23,6 +23,11 @@ import com.goldsanchez.learnverbsenglish.ui.theme.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ScreenA(viewModel: IrregularVerbViewModel, onBack: () -> Unit, onVerbClick: (Int) -> Unit) {
+    val learnedVerbs by viewModel.learnedVerbs.collectAsState()
+    
+    // Filtramos los verbos: solo mostramos los que NO han sido aprendidos
+    val unlearnedVerbs = viewModel.filteredVerbs.filter { !learnedVerbs.contains(it.infinitive) }
+
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -65,6 +70,13 @@ fun ScreenA(viewModel: IrregularVerbViewModel, onBack: () -> Unit, onVerbClick: 
                 ),
                 singleLine = true
             )
+            
+            if (unlearnedVerbs.isEmpty() && viewModel.searchQuery.isEmpty()) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("¡Felicidades! Has aprendido todos los verbos.", color = Color.Gray, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                }
+            }
+
             Spacer(modifier = Modifier.height(20.dp))
 
             LazyColumn(
@@ -72,7 +84,7 @@ fun ScreenA(viewModel: IrregularVerbViewModel, onBack: () -> Unit, onVerbClick: 
                 modifier = Modifier.weight(1f),
                 contentPadding = PaddingValues(bottom = 20.dp)
             ) {
-                itemsIndexed(viewModel.filteredVerbs) { _, verb ->
+                itemsIndexed(unlearnedVerbs) { index, verb ->
                     val actualIndex = viewModel.verbs.indexOf(verb)
                     VerbItem(verb, actualIndex, onVerbClick)
                 }

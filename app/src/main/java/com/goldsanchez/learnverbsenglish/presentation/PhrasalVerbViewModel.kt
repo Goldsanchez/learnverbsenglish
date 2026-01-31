@@ -6,8 +6,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.goldsanchez.learnverbsenglish.data.AuthRepository
 import com.goldsanchez.learnverbsenglish.data.PhrasalVerbRepository
 import com.goldsanchez.learnverbsenglish.data.PhrasalVerbRepositoryImpl
+import com.goldsanchez.learnverbsenglish.data.ProgressRepository
 import com.goldsanchez.learnverbsenglish.data.RevenueRepository
 import com.goldsanchez.learnverbsenglish.domain.model.PhrasalVerb
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,10 +17,13 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 class PhrasalVerbViewModel(
     private val repository: PhrasalVerbRepository = PhrasalVerbRepositoryImpl(),
-    private val revenueRepository: RevenueRepository
+    private val revenueRepository: RevenueRepository,
+    private val authRepository: AuthRepository,
+    private val progressRepository: ProgressRepository
 ) : ViewModel() {
     
     var searchQuery by mutableStateOf("")
@@ -32,6 +37,8 @@ class PhrasalVerbViewModel(
             it.translation.contains(searchQuery, ignoreCase = true)
         }
 
+    val learnedVerbs: StateFlow<Set<String>> = progressRepository.learnedVerbs
+
     // Ads State from RevenueCat
     private val _isDebugPremium = MutableStateFlow(false)
     val isAdsRemoved: StateFlow<Boolean> = revenueRepository.isAdsRemoved
@@ -40,6 +47,13 @@ class PhrasalVerbViewModel(
 
     fun onSearchQueryChange(newQuery: String) {
         searchQuery = newQuery
+    }
+
+    fun toggleLearned(verbId: String) {
+        val userId = authRepository.currentUser.value?.uid
+        viewModelScope.launch {
+            progressRepository.toggleVerbProgress(userId, verbId)
+        }
     }
 
     fun getVerbByIndex(index: Int): PhrasalVerb? {

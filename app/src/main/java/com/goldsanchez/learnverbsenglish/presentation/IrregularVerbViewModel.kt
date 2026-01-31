@@ -7,6 +7,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.goldsanchez.learnverbsenglish.data.AuthRepository
+import com.goldsanchez.learnverbsenglish.data.ProgressRepository
 import com.goldsanchez.learnverbsenglish.data.RevenueRepository
 import com.goldsanchez.learnverbsenglish.data.VerbRepository
 import com.goldsanchez.learnverbsenglish.data.VerbRepositoryImpl
@@ -18,11 +19,13 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 
 class IrregularVerbViewModel(
     private val repository: VerbRepository = VerbRepositoryImpl(),
     private val revenueRepository: RevenueRepository,
-    private val authRepository: AuthRepository
+    private val authRepository: AuthRepository,
+    private val progressRepository: ProgressRepository
 ) : ViewModel() {
     
     var searchQuery by mutableStateOf("")
@@ -37,8 +40,8 @@ class IrregularVerbViewModel(
         }
 
     val currentUser: StateFlow<FirebaseUser?> = authRepository.currentUser
+    val learnedVerbs: StateFlow<Set<String>> = progressRepository.learnedVerbs
 
-    // Ads State from RevenueCat
     private val _isDebugPremium = MutableStateFlow(false)
     val isAdsRemoved: StateFlow<Boolean> = revenueRepository.isAdsRemoved
         .combine(_isDebugPremium) { real, debug -> real || debug }
@@ -46,6 +49,14 @@ class IrregularVerbViewModel(
 
     fun onSearchQueryChange(newQuery: String) {
         searchQuery = newQuery
+    }
+
+    fun toggleLearned(verbId: String) {
+        // CORRECCIÓN: Permitimos que userId sea nulo para guardar localmente
+        val userId = authRepository.currentUser.value?.uid 
+        viewModelScope.launch {
+            progressRepository.toggleVerbProgress(userId, verbId)
+        }
     }
 
     fun getVerbByIndex(index: Int): Verb? {
@@ -59,9 +70,7 @@ class IrregularVerbViewModel(
     }
 
     fun purchasePackage(activity: Activity, packageToPurchase: Package) {
-        revenueRepository.purchasePackage(activity, packageToPurchase) { success ->
-            // El estado se actualiza automáticamente via flow en RevenueRepository
-        }
+        revenueRepository.purchasePackage(activity, packageToPurchase) { success -> }
     }
 
     fun signOut() {

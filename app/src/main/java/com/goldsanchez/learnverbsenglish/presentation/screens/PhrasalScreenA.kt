@@ -23,6 +23,9 @@ import com.goldsanchez.learnverbsenglish.ui.theme.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PhrasalScreenA(viewModel: PhrasalVerbViewModel, onBack: () -> Unit, onVerbClick: (Int) -> Unit) {
+    val learnedVerbs by viewModel.learnedVerbs.collectAsState()
+    val unlearnedPhrasals = viewModel.filteredVerbs.filter { !learnedVerbs.contains(it.verb) }
+
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
@@ -59,6 +62,13 @@ fun PhrasalScreenA(viewModel: PhrasalVerbViewModel, onBack: () -> Unit, onVerbCl
                 ),
                 singleLine = true
             )
+            
+            if (unlearnedPhrasals.isEmpty() && viewModel.searchQuery.isEmpty()) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Text("¡Increíble! Dominas todos los Phrasal Verbs.", color = Color.Gray, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+                }
+            }
+
             Spacer(modifier = Modifier.height(20.dp))
 
             LazyColumn(
@@ -66,7 +76,7 @@ fun PhrasalScreenA(viewModel: PhrasalVerbViewModel, onBack: () -> Unit, onVerbCl
                 modifier = Modifier.weight(1f),
                 contentPadding = PaddingValues(bottom = 20.dp)
             ) {
-                itemsIndexed(viewModel.filteredVerbs) { _, phrasalVerb ->
+                itemsIndexed(unlearnedPhrasals) { index, phrasalVerb ->
                     val actualIndex = viewModel.phrasalVerbs.indexOf(phrasalVerb)
                     PhrasalVerbItem(phrasalVerb, actualIndex, onVerbClick)
                 }

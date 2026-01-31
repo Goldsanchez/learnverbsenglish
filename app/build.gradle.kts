@@ -59,6 +59,7 @@ dependencies {
     
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth)
+    implementation(libs.firebase.firestore) // Añadida la dependencia de Firestore
     implementation(libs.revenuecat.purchases)
     
     implementation(libs.androidx.core.splashscreen)

@@ -6,8 +6,14 @@ import com.google.firebase.auth.UserProfileChangeRequest
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
-class AuthRepository(private val revenueRepository: RevenueRepository) {
+class AuthRepository(
+    private val revenueRepository: RevenueRepository,
+    private val progressRepository: ProgressRepository
+) {
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
 
     private val _currentUser = MutableStateFlow<FirebaseUser?>(auth.currentUser)
@@ -17,10 +23,14 @@ class AuthRepository(private val revenueRepository: RevenueRepository) {
         auth.addAuthStateListener { firebaseAuth ->
             val user = firebaseAuth.currentUser
             _currentUser.value = user
-            // Sincronizar con RevenueCat si hay un usuario
-            user?.uid?.let { uid ->
-                revenueRepository.logIn(uid)
+            if (user != null) {
+                revenueRepository.logIn(user.uid)
+                // Cargamos progreso de la nube y lo unimos al local
+                CoroutineScope(Dispatchers.IO).launch {
+                    progressRepository.fetchProgress(user.uid)
+                }
             }
+            // Eliminamos el clearProgress() de aquí para que los free users mantengan su progreso local
         }
     }
 
@@ -32,10 +42,10 @@ class AuthRepository(private val revenueRepository: RevenueRepository) {
                 .setDisplayName(name)
                 .build()
             user?.updateProfile(profileUpdates)?.await()
-            
-            // Vincular con RevenueCat inmediatamente
-            user?.uid?.let { revenueRepository.logIn(it) }
-            
+            user?.uid?.let { uid ->
+                revenueRepository.logIn(uid)
+                progressRepository.fetchProgress(uid)
+            }
             Result.success(user)
         } catch (e: Exception) {
             Result.failure(e)
@@ -46,10 +56,10 @@ class AuthRepository(private val revenueRepository: RevenueRepository) {
         return try {
             val result = auth.signInWithEmailAndPassword(email, password).await()
             val user = result.user
-            
-            // Vincular con RevenueCat inmediatamente
-            user?.uid?.let { revenueRepository.logIn(it) }
-            
+            user?.uid?.let { uid ->
+                revenueRepository.logIn(uid)
+                progressRepository.fetchProgress(uid)
+            }
             Result.success(user)
         } catch (e: Exception) {
             Result.failure(e)
@@ -58,8 +68,9 @@ class AuthRepository(private val revenueRepository: RevenueRepository) {
 
     fun signOut() {
         auth.signOut()
-        // Desvincular de RevenueCat para que el estado premium se limpie
         revenueRepository.logOut()
+        // Aquí SÍ borramos el progreso porque es un cierre de sesión explícito
+        progressRepository.clearProgress()
     }
 
     suspend fun resetPassword(email: String): Result<Unit> {
