@@ -2,6 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.google.services) // Plugin de Google Services para Firebase
 }
 
 android {
@@ -12,25 +13,20 @@ android {
         applicationId = "com.goldsanchez.learnverbsenglish"
         minSdk = 26
         targetSdk = 35
-        versionCode = 4
-        versionName = "4"
+        versionCode = 11
+        versionName = "1.1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
         release {
-            // 1. Activa la optimización y ofuscación de código
             isMinifyEnabled = true
-            // 2. Elimina recursos no utilizados para reducir el tamaño
             isShrinkResources = true
-            
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
-            
-            // 3. Genera los símbolos de depuración para código nativo (AdMob/Billing)
             ndk {
                 debugSymbolLevel = "FULL"
             }
@@ -60,7 +56,12 @@ dependencies {
     implementation(libs.androidx.navigation.compose)
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.play.services.ads)
-    implementation(libs.play.billing)
+    
+    // Firebase & RevenueCat
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.auth)
+    implementation(libs.revenuecat.purchases)
+    
     implementation(libs.androidx.core.splashscreen)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

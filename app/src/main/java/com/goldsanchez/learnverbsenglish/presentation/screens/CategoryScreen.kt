@@ -1,6 +1,8 @@
 package com.goldsanchez.learnverbsenglish.presentation.screens
 
 import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.BorderStroke
@@ -15,6 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.MenuBook
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.rounded.WorkspacePremium
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -30,25 +33,45 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.goldsanchez.learnverbsenglish.presentation.IrregularVerbViewModel
 import com.goldsanchez.learnverbsenglish.ui.theme.*
+import com.revenuecat.purchases.Package
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CategoryScreen(
     viewModel: IrregularVerbViewModel,
     onIrregularClick: () -> Unit,
-    onPhrasalClick: () -> Unit
+    onPhrasalClick: () -> Unit,
+    onProfileClick: () -> Unit
 ) {
     val isAdsRemoved by viewModel.isAdsRemoved.collectAsState()
     val context = LocalContext.current
     var showPayDialog by remember { mutableStateOf(false) }
     val scrollState = rememberScrollState()
+    var offerings by remember { mutableStateOf<List<Package>>(emptyList()) }
+
+    // Cargar ofertas de RevenueCat
+    LaunchedEffect(Unit) {
+        viewModel.getOfferings { list ->
+            offerings = list
+        }
+    }
+
+    // Función segura para cerrar el diálogo
+    val closeDialog = { showPayDialog = false }
+
+    // Función auxiliar para obtener Activity sin errores de casteo
+    fun Context.findActivity(): Activity? = when (this) {
+        is Activity -> this
+        is ContextWrapper -> baseContext.findActivity()
+        else -> null
+    }
 
     if (showPayDialog) {
         AlertDialog(
-            onDismissRequest = { showPayDialog = false },
+            onDismissRequest = closeDialog,
             confirmButton = {},
             dismissButton = {
-                TextButton(onClick = { showPayDialog = false }, modifier = Modifier.fillMaxWidth()) {
+                TextButton(onClick = closeDialog, modifier = Modifier.fillMaxWidth()) {
                     Text("Cerrar", color = Color.Gray)
                 }
             },
@@ -56,7 +79,7 @@ fun CategoryScreen(
                 Icon(
                     Icons.Rounded.WorkspacePremium, 
                     contentDescription = null, 
-                    tint = if (isAdsRemoved) Color(0xFFFFD700) else Color.White, 
+                    tint = if (isAdsRemoved) Color(0xFFFFD700) else AccentColor, 
                     modifier = Modifier.size(40.dp)
                 ) 
             },
@@ -70,7 +93,8 @@ fun CategoryScreen(
             text = {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
                     Text(
-                        "Aprende sin anuncios. Tu suscripción ayuda a que la app siga mejorando cada día.", 
+                        if (isAdsRemoved) "¡Ya eres miembro Premium! Disfrutas de una experiencia sin anuncios y apoyas el proyecto."
+                        else "Aprende sin anuncios. Tu suscripción ayuda a que la app siga mejorando cada día.", 
                         fontSize = 14.sp, 
                         textAlign = TextAlign.Center,
                         lineHeight = 20.sp,
@@ -94,26 +118,26 @@ fun CategoryScreen(
                             Text("Gestionar Suscripción")
                         }
                     } else {
-                        SubscriptionOption(
-                            title = "Plan Mensual",
-                            price = "$0.99 USD",
-                            subtitle = "Cobro cada mes",
-                            onClick = {
-                                showPayDialog = false
-                                viewModel.removeAds(context as Activity, "sub_monthly")
-                            }
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                        SubscriptionOption(
-                            title = "Plan Anual",
-                            price = "$4.99 USD",
-                            subtitle = "¡Ahorra más del 50%!",
-                            isHighlight = true,
-                            onClick = {
-                                showPayDialog = false
-                                viewModel.removeAds(context as Activity, "sub_yearly")
-                            }
-                        )
+                        // Dinámicamente mostrar paquetes de RevenueCat
+                        offerings.forEach { pkg ->
+                            SubscriptionOption(
+                                title = pkg.product.title,
+                                price = pkg.product.price.formatted,
+                                subtitle = pkg.product.description,
+                                isHighlight = pkg.identifier.contains("yearly", true),
+                                onClick = {
+                                    closeDialog()
+                                    context.findActivity()?.let { activity ->
+                                        viewModel.purchasePackage(activity, pkg)
+                                    }
+                                }
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                        }
+                        
+                        if (offerings.isEmpty()) {
+                            Text("Cargando planes...", color = Color.Gray, fontSize = 12.sp)
+                        }
                     }
                 }
             },
@@ -135,6 +159,11 @@ fun CategoryScreen(
                             color = Color.White
                         )
                     )
+                },
+                navigationIcon = {
+                    IconButton(onClick = onProfileClick) {
+                        Icon(Icons.Default.Person, contentDescription = "Perfil", tint = Color.White)
+                    }
                 },
                 actions = {
                     IconButton(onClick = { showPayDialog = true }) {
@@ -187,7 +216,7 @@ fun CategoryScreen(
                 title = "Verbos Irregulares",
                 description = "Domina las 3 formas fundamentales",
                 icon = Icons.Default.AutoAwesome,
-                accentColor = Color(0xFF3F51B5),
+                accentColor = AccentColor,
                 onClick = onIrregularClick
             )
 
@@ -275,7 +304,7 @@ fun SubscriptionOption(title: String, price: String, subtitle: String, isHighlig
         onClick = onClick,
         shape = RoundedCornerShape(16.dp),
         color = if (isHighlight) Color(0xFFE8EAF6) else Color.White,
-        border = BorderStroke(2.dp, if (isHighlight) Color(0xFF3F51B5) else Color(0xFFF0F2F5)),
+        border = BorderStroke(2.dp, if (isHighlight) AccentColor else Color(0xFFF0F2F5)),
         modifier = Modifier.fillMaxWidth()
     ) {
         Row(
@@ -285,9 +314,9 @@ fun SubscriptionOption(title: String, price: String, subtitle: String, isHighlig
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(title, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color(0xFF1C1B1F))
-                Text(subtitle, fontSize = 12.sp, color = if (isHighlight) Color(0xFF3F51B5) else Color.Gray)
+                Text(subtitle, fontSize = 12.sp, color = if (isHighlight) AccentColor else Color.Gray)
             }
-            Text(price, fontWeight = FontWeight.Black, fontSize = 18.sp, color = Color(0xFF3F51B5))
+            Text(price, fontWeight = FontWeight.Black, fontSize = 18.sp, color = AccentColor)
         }
     }
 }

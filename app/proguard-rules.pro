@@ -19,3 +19,14 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+# Conservar clases de Google Play Billing
+-keep class com.android.billingclient.** { *; }
+
+# Conservar clases de AdMob
+-keep class com.google.android.gms.ads.** { *; }
+-keep class com.google.ads.** { *; }
+
+# Evitar que se eliminen atributos necesarios para la facturación
+-keepattributes *Annotation*
+-keepattributes Signature

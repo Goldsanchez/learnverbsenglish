@@ -6,9 +6,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.goldsanchez.learnverbsenglish.data.BillingRepository
 import com.goldsanchez.learnverbsenglish.data.PhrasalVerbRepository
 import com.goldsanchez.learnverbsenglish.data.PhrasalVerbRepositoryImpl
+import com.goldsanchez.learnverbsenglish.data.RevenueRepository
 import com.goldsanchez.learnverbsenglish.domain.model.PhrasalVerb
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -18,7 +18,7 @@ import kotlinx.coroutines.flow.stateIn
 
 class PhrasalVerbViewModel(
     private val repository: PhrasalVerbRepository = PhrasalVerbRepositoryImpl(),
-    private val billingRepository: BillingRepository
+    private val revenueRepository: RevenueRepository
 ) : ViewModel() {
     
     var searchQuery by mutableStateOf("")
@@ -32,9 +32,9 @@ class PhrasalVerbViewModel(
             it.translation.contains(searchQuery, ignoreCase = true)
         }
 
-    // Ads State (Shared logic from BillingRepository)
+    // Ads State from RevenueCat
     private val _isDebugPremium = MutableStateFlow(false)
-    val isAdsRemoved: StateFlow<Boolean> = billingRepository.isAdsRemoved
+    val isAdsRemoved: StateFlow<Boolean> = revenueRepository.isAdsRemoved
         .combine(_isDebugPremium) { real, debug -> real || debug }
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
 
@@ -48,10 +48,6 @@ class PhrasalVerbViewModel(
 
     fun getTotalVerbs(): Int = phrasalVerbs.size
 
-    fun removeAds(activity: Activity, productId: String) {
-        billingRepository.launchBillingFlow(activity, productId)
-    }
-    
     fun toggleDebugPremium() {
         _isDebugPremium.value = !_isDebugPremium.value
     }
