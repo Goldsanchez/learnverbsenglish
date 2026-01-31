@@ -1,14 +1,18 @@
 package com.goldsanchez.learnverbsenglish.data
 
 import android.app.Activity
+import com.revenuecat.purchases.CachePolicy
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
+import com.revenuecat.purchases.getCustomerInfoWith
 import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
+import com.revenuecat.purchases.logInWith
+import com.revenuecat.purchases.logOutWith
 import com.revenuecat.purchases.models.StoreTransaction
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -19,17 +23,37 @@ class RevenueRepository {
     val isAdsRemoved: StateFlow<Boolean> = _isAdsRemoved
 
     init {
-        // Al iniciar, verificamos el estado de la suscripción
-        Purchases.sharedInstance.getCustomerInfo(object : ReceiveCustomerInfoCallback {
-            override fun onReceived(customerInfo: CustomerInfo) {
-                // "premium" es el ID del Entitlement que debes crear en el dashboard de RevenueCat
+        refreshCustomerInfo()
+    }
+
+    // Cambiamos a una política de refresco más activa
+    fun refreshCustomerInfo() {
+        Purchases.sharedInstance.getCustomerInfoWith(
+            cachePolicy = CachePolicy.FETCH_CURRENT, // Forzamos a consultar al servidor, no al cache
+            onError = { /* Manejar error */ },
+            onSuccess = { customerInfo ->
                 _isAdsRemoved.value = customerInfo.entitlements["premium"]?.isActive == true
             }
+        )
+    }
 
-            override fun onError(error: PurchasesError) {
-                // Manejar error si es necesario
-            }
-        })
+    fun logIn(appUserId: String) {
+        Purchases.sharedInstance.logInWith(
+            appUserId,
+            onSuccess = { customerInfo, _ ->
+                _isAdsRemoved.value = customerInfo.entitlements["premium"]?.isActive == true
+            },
+            onError = { error -> }
+        )
+    }
+
+    fun logOut() {
+        Purchases.sharedInstance.logOutWith(
+            onSuccess = { customerInfo ->
+                _isAdsRemoved.value = customerInfo.entitlements["premium"]?.isActive == true
+            },
+            onError = { error -> }
+        )
     }
 
     fun purchasePackage(activity: Activity, packageToPurchase: Package, onResult: (Boolean) -> Unit) {
@@ -42,7 +66,6 @@ class RevenueRepository {
                         onResult(true)
                     }
                 }
-
                 override fun onError(error: PurchasesError, userCancelled: Boolean) {
                     onResult(false)
                 }
@@ -54,7 +77,6 @@ class RevenueRepository {
         Purchases.sharedInstance.getOfferingsWith(
             onError = { onResult(emptyList()) },
             onSuccess = { offerings ->
-                // Obtenemos los paquetes del offering actual (default)
                 val packages = offerings.current?.availablePackages ?: emptyList()
                 onResult(packages)
             }

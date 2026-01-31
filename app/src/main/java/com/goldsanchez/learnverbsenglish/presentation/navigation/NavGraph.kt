@@ -2,8 +2,6 @@ package com.goldsanchez.learnverbsenglish.presentation.navigation
 
 import android.speech.tts.TextToSpeech
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -26,11 +24,10 @@ fun NavGraph(
     authRepository: AuthRepository
 ) {
     val navController = rememberNavController()
-    val currentUser by authRepository.currentUser.collectAsState()
 
     NavHost(
         navController = navController, 
-        startDestination = if (currentUser == null) "login" else "categories"
+        startDestination = "categories" // La app inicia siempre en categorías
     ) {
         composable("login") {
             val authViewModel: AuthViewModel = viewModel(
@@ -85,7 +82,14 @@ fun NavGraph(
                 viewModel = viewModel,
                 onIrregularClick = { navController.navigate("irregular_list") },
                 onPhrasalClick = { navController.navigate("phrasal_list") },
-                onProfileClick = { navController.navigate("profile") }
+                onProfileClick = { 
+                    // Si el usuario no está logueado, lo mandamos al login, si no, al perfil
+                    if (authRepository.currentUser.value == null) {
+                        navController.navigate("login")
+                    } else {
+                        navController.navigate("profile")
+                    }
+                }
             )
         }
         
@@ -104,105 +108,31 @@ fun NavGraph(
                 viewModel = viewModel,
                 onBack = { navController.popBackStack() },
                 onLogout = {
-                    navController.navigate("login") {
+                    navController.navigate("categories") {
                         popUpTo(0) { inclusive = true }
                     }
                 }
             )
         }
         
-        // Irregular Verbs Flow
+        // ... (resto de rutas de listas y detalles igual)
         composable("irregular_list") {
-            val viewModel: IrregularVerbViewModel = viewModel(
-                factory = object : ViewModelProvider.Factory {
-                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                        return IrregularVerbViewModel(
-                            revenueRepository = revenueRepository,
-                            authRepository = authRepository
-                        ) as T
-                    }
-                }
-            )
-            ScreenA(
-                viewModel = viewModel, 
-                onBack = { navController.popBackStack() },
-                onVerbClick = { index ->
-                    navController.navigate("irregular_detail/$index")
-                }
-            )
+            val viewModel: IrregularVerbViewModel = viewModel(factory = object : ViewModelProvider.Factory { override fun <T : ViewModel> create(modelClass: Class<T>): T = IrregularVerbViewModel(revenueRepository = revenueRepository, authRepository = authRepository) as T })
+            ScreenA(viewModel = viewModel, onBack = { navController.popBackStack() }, onVerbClick = { index -> navController.navigate("irregular_detail/$index") })
         }
-        composable(
-            "irregular_detail/{verbIndex}",
-            arguments = listOf(navArgument("verbIndex") { type = NavType.IntType })
-        ) { backStackEntry ->
+        composable("irregular_detail/{verbIndex}", arguments = listOf(navArgument("verbIndex") { type = NavType.IntType })) { backStackEntry ->
             val index = backStackEntry.arguments?.getInt("verbIndex") ?: 0
-            val viewModel: IrregularVerbViewModel = viewModel(
-                factory = object : ViewModelProvider.Factory {
-                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                        return IrregularVerbViewModel(
-                            revenueRepository = revenueRepository,
-                            authRepository = authRepository
-                        ) as T
-                    }
-                }
-            )
-            ScreenB(
-                verbIndex = index,
-                viewModel = viewModel,
-                tts = tts,
-                onBack = { navController.popBackStack() },
-                onNavigate = { newIndex ->
-                    navController.navigate("irregular_detail/$newIndex") {
-                        popUpTo("irregular_list")
-                    }
-                }
-            )
+            val viewModel: IrregularVerbViewModel = viewModel(factory = object : ViewModelProvider.Factory { override fun <T : ViewModel> create(modelClass: Class<T>): T = IrregularVerbViewModel(revenueRepository = revenueRepository, authRepository = authRepository) as T })
+            ScreenB(verbIndex = index, viewModel = viewModel, tts = tts, onBack = { navController.popBackStack() }, onNavigate = { newIndex -> navController.navigate("irregular_detail/$newIndex") { popUpTo("irregular_list") } })
         }
-
-        // Phrasal Verbs Flow
         composable("phrasal_list") {
-            val viewModel: PhrasalVerbViewModel = viewModel(
-                factory = object : ViewModelProvider.Factory {
-                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                        return PhrasalVerbViewModel(
-                            revenueRepository = revenueRepository
-                        ) as T
-                    }
-                }
-            )
-            PhrasalScreenA(
-                viewModel = viewModel,
-                onBack = { navController.popBackStack() },
-                onVerbClick = { index ->
-                    navController.navigate("phrasal_detail/$index")
-                }
-            )
+            val viewModel: PhrasalVerbViewModel = viewModel(factory = object : ViewModelProvider.Factory { override fun <T : ViewModel> create(modelClass: Class<T>): T = PhrasalVerbViewModel(revenueRepository = revenueRepository) as T })
+            PhrasalScreenA(viewModel = viewModel, onBack = { navController.popBackStack() }, onVerbClick = { index -> navController.navigate("phrasal_detail/$index") })
         }
-        composable(
-            "phrasal_detail/{verbIndex}",
-            arguments = listOf(navArgument("verbIndex") { type = NavType.IntType })
-        ) { backStackEntry ->
+        composable("phrasal_detail/{verbIndex}", arguments = listOf(navArgument("verbIndex") { type = NavType.IntType })) { backStackEntry ->
             val index = backStackEntry.arguments?.getInt("verbIndex") ?: 0
-            val viewModel: PhrasalVerbViewModel = viewModel(
-                factory = object : ViewModelProvider.Factory {
-                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                        return PhrasalVerbViewModel(
-                            revenueRepository = revenueRepository
-                        ) as T
-                    }
-                }
-            )
-            PhrasalScreenB(
-                verbIndex = index,
-                viewModel = viewModel,
-                tts = tts,
-                onBack = { navController.popBackStack() },
-                onNavigate = { newIndex ->
-                    navController.navigate("phrasal_detail/$newIndex") {
-                        popUpTo("phrasal_list")
-                    }
-                }
-            )
+            val viewModel: PhrasalVerbViewModel = viewModel(factory = object : ViewModelProvider.Factory { override fun <T : ViewModel> create(modelClass: Class<T>): T = PhrasalVerbViewModel(revenueRepository = revenueRepository) as T })
+            PhrasalScreenB(verbIndex = index, viewModel = viewModel, tts = tts, onBack = { navController.popBackStack() }, onNavigate = { newIndex -> navController.navigate("phrasal_detail/$newIndex") { popUpTo("phrasal_list") } })
         }
     }
 }

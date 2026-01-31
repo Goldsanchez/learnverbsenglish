@@ -7,7 +7,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.tasks.await
 
-class AuthRepository {
+class AuthRepository(private val revenueRepository: RevenueRepository) {
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
 
     private val _currentUser = MutableStateFlow<FirebaseUser?>(auth.currentUser)
@@ -15,7 +15,12 @@ class AuthRepository {
 
     init {
         auth.addAuthStateListener { firebaseAuth ->
-            _currentUser.value = firebaseAuth.currentUser
+            val user = firebaseAuth.currentUser
+            _currentUser.value = user
+            // Sincronizar con RevenueCat si hay un usuario
+            user?.uid?.let { uid ->
+                revenueRepository.logIn(uid)
+            }
         }
     }
 
@@ -27,6 +32,10 @@ class AuthRepository {
                 .setDisplayName(name)
                 .build()
             user?.updateProfile(profileUpdates)?.await()
+            
+            // Vincular con RevenueCat inmediatamente
+            user?.uid?.let { revenueRepository.logIn(it) }
+            
             Result.success(user)
         } catch (e: Exception) {
             Result.failure(e)
@@ -36,7 +45,12 @@ class AuthRepository {
     suspend fun signIn(email: String, password: String): Result<FirebaseUser?> {
         return try {
             val result = auth.signInWithEmailAndPassword(email, password).await()
-            Result.success(result.user)
+            val user = result.user
+            
+            // Vincular con RevenueCat inmediatamente
+            user?.uid?.let { revenueRepository.logIn(it) }
+            
+            Result.success(user)
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -44,6 +58,8 @@ class AuthRepository {
 
     fun signOut() {
         auth.signOut()
+        // Desvincular de RevenueCat para que el estado premium se limpie
+        revenueRepository.logOut()
     }
 
     suspend fun resetPassword(email: String): Result<Unit> {

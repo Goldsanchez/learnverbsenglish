@@ -26,7 +26,8 @@ class MainActivity : ComponentActivity() {
         
         // Inicializamos los nuevos repositorios
         revenueRepository = RevenueRepository()
-        authRepository = AuthRepository()
+        // CORRECCIÓN: Pasar revenueRepository al constructor de AuthRepository
+        authRepository = AuthRepository(revenueRepository)
 
         tts = TextToSpeech(this) { status ->
             if (status != TextToSpeech.ERROR) {
