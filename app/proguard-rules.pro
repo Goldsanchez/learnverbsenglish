@@ -1,32 +1,43 @@
 # Add project specific ProGuard rules here.
 # You can control the set of applied configuration files using the
 # proguardFiles setting in build.gradle.
-#
-# For more details, see
-#   http://developer.android.com/guide/developing/tools/proguard.html
 
-# If your project uses WebView with JS, uncomment the following
-# and specify the fully qualified class name to the JavaScript interface
-# class:
-#-keepclassmembers class fqcn.of.javascript.interface.for.webview {
-#   public *;
-#}
+# Optimización para Jetpack Compose
+-keepclassmembers class androidx.compose.ui.platform.InspectableValue {
+   private java.lang.Object element;
+}
 
-# Uncomment this to preserve the line number information for
-# debugging stack traces.
-#-keepattributes SourceFile,LineNumberTable
+# --- REVENUECAT ---
+# Reglas necesarias para que la facturación con RevenueCat no se rompa al ofuscar
+-keep class com.revenuecat.purchases.** { *; }
+-dontwarn com.revenuecat.purchases.**
 
-# If you keep the line number information, uncomment this to
-# hide the original source file name.
-#-renamesourcefileattribute SourceFile
-
-# Conservar clases de Google Play Billing
+# --- GOOGLE PLAY BILLING ---
+# Conservar clases de Google Play Billing (RevenueCat lo usa internamente)
 -keep class com.android.billingclient.** { *; }
+-dontwarn com.android.billingclient.**
 
-# Conservar clases de AdMob
+# --- FIREBASE & GOOGLE SERVICES ---
+# Firebase Auth y servicios de Google
+-keepattributes Signature, *Annotation*, EnclosingMethod, InnerClasses
+-keep public class com.google.firebase.** { *; }
+-keep public class com.google.android.gms.** { *; }
+-dontwarn com.google.firebase.**
+-dontwarn com.google.android.gms.**
+
+# --- ADMOB ---
+# Conservar clases de AdMob para que los anuncios se carguen correctamente
 -keep class com.google.android.gms.ads.** { *; }
 -keep class com.google.ads.** { *; }
 
-# Evitar que se eliminen atributos necesarios para la facturación
--keepattributes *Annotation*
--keepattributes Signature
+# --- KOTLIN COROUTINES ---
+# Necesario si usas corrutinas (Firebase y RevenueCat las usan)
+-keepnames class kotlinx.coroutines.internal.MainDispatcherFactory {}
+-keepnames class kotlinx.coroutines.CoroutineExceptionHandler {}
+-keepnames class kotlinx.coroutines.android.AndroidExceptionPreHandler {}
+-keepnames class kotlinx.coroutines.android.AndroidDispatcherFactory {}
+-dontwarn kotlinx.coroutines.**
+
+# Mantener los nombres de los modelos de datos si se usan para serialización (JSON)
+# Si tus clases Verb o PhrasalVerb se usan con Firebase Realtime/Firestore o Gson:
+-keepclassmembers class com.goldsanchez.learnverbsenglish.domain.model.** { *; }

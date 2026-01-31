@@ -2,7 +2,7 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
-    alias(libs.plugins.google.services) // Plugin de Google Services para Firebase
+    alias(libs.plugins.google.services)
 }
 
 android {
@@ -13,8 +13,8 @@ android {
         applicationId = "com.goldsanchez.learnverbsenglish"
         minSdk = 26
         targetSdk = 35
-        versionCode = 11
-        versionName = "1.1"
+        versionCode = 12
+        versionName = "1.2"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -57,7 +57,6 @@ dependencies {
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.play.services.ads)
     
-    // Firebase & RevenueCat
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.auth)
     implementation(libs.revenuecat.purchases)

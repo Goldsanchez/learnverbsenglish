@@ -1,13 +1,11 @@
 package com.goldsanchez.learnverbsenglish.data
 
 import android.app.Activity
-import com.revenuecat.purchases.CachePolicy
 import com.revenuecat.purchases.CustomerInfo
 import com.revenuecat.purchases.Package
 import com.revenuecat.purchases.PurchaseParams
 import com.revenuecat.purchases.Purchases
 import com.revenuecat.purchases.PurchasesError
-import com.revenuecat.purchases.getCustomerInfoWith
 import com.revenuecat.purchases.getOfferingsWith
 import com.revenuecat.purchases.interfaces.PurchaseCallback
 import com.revenuecat.purchases.interfaces.ReceiveCustomerInfoCallback
@@ -26,15 +24,20 @@ class RevenueRepository {
         refreshCustomerInfo()
     }
 
-    // Cambiamos a una política de refresco más activa
+    // Cambiamos a una forma más compatible de forzar el refresco
     fun refreshCustomerInfo() {
-        Purchases.sharedInstance.getCustomerInfoWith(
-            cachePolicy = CachePolicy.FETCH_CURRENT, // Forzamos a consultar al servidor, no al cache
-            onError = { /* Manejar error */ },
-            onSuccess = { customerInfo ->
+        // Invalidamos la caché local para forzar que el siguiente getCustomerInfo consulte al servidor
+        Purchases.sharedInstance.invalidateCustomerInfoCache()
+        
+        Purchases.sharedInstance.getCustomerInfo(object : ReceiveCustomerInfoCallback {
+            override fun onReceived(customerInfo: CustomerInfo) {
                 _isAdsRemoved.value = customerInfo.entitlements["premium"]?.isActive == true
             }
-        )
+
+            override fun onError(error: PurchasesError) {
+                // Manejar error si es necesario
+            }
+        })
     }
 
     fun logIn(appUserId: String) {
