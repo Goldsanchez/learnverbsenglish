@@ -8,6 +8,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import com.goldsanchez.learnverbsenglish.data.AuthRepository
 import com.goldsanchez.learnverbsenglish.data.RevenueRepository
+import com.goldsanchez.learnverbsenglish.presentation.components.AdManager
 import com.goldsanchez.learnverbsenglish.presentation.navigation.NavGraph
 import com.goldsanchez.learnverbsenglish.ui.theme.LearnverbsenglishTheme
 import com.google.android.gms.ads.MobileAds
@@ -22,11 +23,12 @@ class MainActivity : ComponentActivity() {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         
-        MobileAds.initialize(this) {}
+        MobileAds.initialize(this) {
+            // Cargamos el primer anuncio intersticial al iniciar
+            AdManager.loadInterstitial(this)
+        }
         
-        // Inicializamos los nuevos repositorios
         revenueRepository = RevenueRepository()
-        // CORRECCIÓN: Pasar revenueRepository al constructor de AuthRepository
         authRepository = AuthRepository(revenueRepository)
 
         tts = TextToSpeech(this) { status ->

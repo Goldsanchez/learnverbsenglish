@@ -18,6 +18,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.rounded.WorkspacePremium
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -41,7 +42,8 @@ fun CategoryScreen(
     viewModel: IrregularVerbViewModel,
     onIrregularClick: () -> Unit,
     onPhrasalClick: () -> Unit,
-    onProfileClick: () -> Unit
+    onProfileClick: () -> Unit,
+    onStoriesClick: () -> Unit
 ) {
     val isAdsRemoved by viewModel.isAdsRemoved.collectAsState()
     val context = LocalContext.current
@@ -49,17 +51,14 @@ fun CategoryScreen(
     val scrollState = rememberScrollState()
     var offerings by remember { mutableStateOf<List<Package>>(emptyList()) }
 
-    // Cargar ofertas de RevenueCat
     LaunchedEffect(Unit) {
         viewModel.getOfferings { list ->
             offerings = list
         }
     }
 
-    // Función segura para cerrar el diálogo
     val closeDialog = { showPayDialog = false }
 
-    // Función auxiliar para obtener Activity sin errores de casteo
     fun Context.findActivity(): Activity? = when (this) {
         is Activity -> this
         is ContextWrapper -> baseContext.findActivity()
@@ -118,7 +117,6 @@ fun CategoryScreen(
                             Text("Gestionar Suscripción")
                         }
                     } else {
-                        // Dinámicamente mostrar paquetes de RevenueCat
                         offerings.forEach { pkg ->
                             SubscriptionOption(
                                 title = pkg.product.title,
@@ -133,10 +131,6 @@ fun CategoryScreen(
                                 }
                             )
                             Spacer(modifier = Modifier.height(12.dp))
-                        }
-                        
-                        if (offerings.isEmpty()) {
-                            Text("Cargando planes...", color = Color.Gray, fontSize = 12.sp)
                         }
                     }
                 }
@@ -202,7 +196,7 @@ fun CategoryScreen(
             )
             
             Text(
-                text = "Selecciona una categoría para comenzar",
+                text = "Selecciona una categoría o lee una historia",
                 style = TextStyle(
                     fontSize = 15.sp,
                     color = Color.Gray,
@@ -211,7 +205,20 @@ fun CategoryScreen(
                 modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp)
             )
 
-            // Categorías
+            // Nueva Categoría: Short Stories
+            CategoryLearningCard(
+                title = "Historias Cortas",
+                description = "Aprende verbos en contexto real",
+                icon = Icons.Default.Translate,
+                accentColor = Color(0xFF10B981), // Verde para diferenciar
+                onClick = onStoriesClick
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+            Divider(color = Color.LightGray.copy(alpha = 0.5f))
+            Spacer(modifier = Modifier.height(24.dp))
+
+            // Categorías clásicas
             CategoryLearningCard(
                 title = "Verbos Irregulares",
                 description = "Domina las 3 formas fundamentales",

@@ -2,6 +2,8 @@ package com.goldsanchez.learnverbsenglish.presentation.navigation
 
 import android.speech.tts.TextToSpeech
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
@@ -15,6 +17,7 @@ import com.goldsanchez.learnverbsenglish.data.RevenueRepository
 import com.goldsanchez.learnverbsenglish.presentation.AuthViewModel
 import com.goldsanchez.learnverbsenglish.presentation.IrregularVerbViewModel
 import com.goldsanchez.learnverbsenglish.presentation.PhrasalVerbViewModel
+import com.goldsanchez.learnverbsenglish.presentation.StoryViewModel
 import com.goldsanchez.learnverbsenglish.presentation.screens.*
 
 @Composable
@@ -24,98 +27,61 @@ fun NavGraph(
     authRepository: AuthRepository
 ) {
     val navController = rememberNavController()
+    val isAdsRemoved by revenueRepository.isAdsRemoved.collectAsState()
 
-    NavHost(
-        navController = navController, 
-        startDestination = "categories" // La app inicia siempre en categorías
-    ) {
+    NavHost(navController = navController, startDestination = "categories") {
         composable("login") {
-            val authViewModel: AuthViewModel = viewModel(
-                factory = object : ViewModelProvider.Factory {
-                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                        return AuthViewModel(authRepository) as T
-                    }
-                }
-            )
-            LoginScreen(
-                viewModel = authViewModel,
-                onLoginSuccess = { 
-                    navController.navigate("categories") {
-                        popUpTo("login") { inclusive = true }
-                    }
-                },
-                onNavigateToSignUp = { navController.navigate("signup") }
-            )
+            val authViewModel: AuthViewModel = viewModel(factory = object : ViewModelProvider.Factory { override fun <T : ViewModel> create(modelClass: Class<T>): T = AuthViewModel(authRepository) as T })
+            LoginScreen(viewModel = authViewModel, onLoginSuccess = { navController.navigate("categories") { popUpTo("login") { inclusive = true } } }, onNavigateToSignUp = { navController.navigate("signup") })
         }
 
         composable("signup") {
-            val authViewModel: AuthViewModel = viewModel(
-                factory = object : ViewModelProvider.Factory {
-                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                        return AuthViewModel(authRepository) as T
-                    }
-                }
-            )
-            SignUpScreen(
-                viewModel = authViewModel,
-                onSignUpSuccess = {
-                    navController.navigate("categories") {
-                        popUpTo("login") { inclusive = true }
-                    }
-                },
-                onNavigateToLogin = { navController.popBackStack() }
-            )
+            val authViewModel: AuthViewModel = viewModel(factory = object : ViewModelProvider.Factory { override fun <T : ViewModel> create(modelClass: Class<T>): T = AuthViewModel(authRepository) as T })
+            SignUpScreen(viewModel = authViewModel, onSignUpSuccess = { navController.navigate("categories") { popUpTo("login") { inclusive = true } } }, onNavigateToLogin = { navController.popBackStack() } )
         }
 
         composable("categories") {
-            val viewModel: IrregularVerbViewModel = viewModel(
-                factory = object : ViewModelProvider.Factory {
-                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                        return IrregularVerbViewModel(
-                            revenueRepository = revenueRepository,
-                            authRepository = authRepository
-                        ) as T
-                    }
-                }
-            )
+            val viewModel: IrregularVerbViewModel = viewModel(factory = object : ViewModelProvider.Factory { override fun <T : ViewModel> create(modelClass: Class<T>): T = IrregularVerbViewModel(revenueRepository = revenueRepository, authRepository = authRepository) as T })
             CategoryScreen(
                 viewModel = viewModel,
                 onIrregularClick = { navController.navigate("irregular_list") },
                 onPhrasalClick = { navController.navigate("phrasal_list") },
-                onProfileClick = { 
-                    // Si el usuario no está logueado, lo mandamos al login, si no, al perfil
-                    if (authRepository.currentUser.value == null) {
-                        navController.navigate("login")
-                    } else {
-                        navController.navigate("profile")
-                    }
-                }
+                onProfileClick = { if (authRepository.currentUser.value == null) navController.navigate("login") else navController.navigate("profile") },
+                onStoriesClick = { navController.navigate("story_list") }
             )
         }
         
-        composable("profile") {
-            val viewModel: IrregularVerbViewModel = viewModel(
-                factory = object : ViewModelProvider.Factory {
-                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                        return IrregularVerbViewModel(
-                            revenueRepository = revenueRepository,
-                            authRepository = authRepository
-                        ) as T
-                    }
-                }
-            )
-            ProfileScreen(
-                viewModel = viewModel,
+        composable("story_list") {
+            val storyViewModel: StoryViewModel = viewModel()
+            StoryListScreen(
+                viewModel = storyViewModel,
+                isPremium = isAdsRemoved,
                 onBack = { navController.popBackStack() },
-                onLogout = {
-                    navController.navigate("categories") {
-                        popUpTo(0) { inclusive = true }
-                    }
-                }
+                onStoryClick = { id -> navController.navigate("story_detail/$id") },
+                onPayClick = { navController.navigate("categories") }
             )
         }
+
+        composable(
+            "story_detail/{storyId}",
+            arguments = listOf(navArgument("storyId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val storyId = backStackEntry.arguments?.getString("storyId") ?: ""
+            val storyViewModel: StoryViewModel = viewModel()
+            StoryDetailScreen(
+                storyId = storyId,
+                viewModel = storyViewModel,
+                isAdsRemoved = isAdsRemoved,
+                tts = tts,
+                onBack = { navController.popBackStack() }
+            )
+        }
+
+        composable("profile") {
+            val viewModel: IrregularVerbViewModel = viewModel(factory = object : ViewModelProvider.Factory { override fun <T : ViewModel> create(modelClass: Class<T>): T = IrregularVerbViewModel(revenueRepository = revenueRepository, authRepository = authRepository) as T })
+            ProfileScreen(viewModel = viewModel, onBack = { navController.popBackStack() }, onLogout = { navController.navigate("categories") { popUpTo(0) { inclusive = true } } })
+        }
         
-        // ... (resto de rutas de listas y detalles igual)
         composable("irregular_list") {
             val viewModel: IrregularVerbViewModel = viewModel(factory = object : ViewModelProvider.Factory { override fun <T : ViewModel> create(modelClass: Class<T>): T = IrregularVerbViewModel(revenueRepository = revenueRepository, authRepository = authRepository) as T })
             ScreenA(viewModel = viewModel, onBack = { navController.popBackStack() }, onVerbClick = { index -> navController.navigate("irregular_detail/$index") })
@@ -123,7 +89,8 @@ fun NavGraph(
         composable("irregular_detail/{verbIndex}", arguments = listOf(navArgument("verbIndex") { type = NavType.IntType })) { backStackEntry ->
             val index = backStackEntry.arguments?.getInt("verbIndex") ?: 0
             val viewModel: IrregularVerbViewModel = viewModel(factory = object : ViewModelProvider.Factory { override fun <T : ViewModel> create(modelClass: Class<T>): T = IrregularVerbViewModel(revenueRepository = revenueRepository, authRepository = authRepository) as T })
-            ScreenB(verbIndex = index, viewModel = viewModel, tts = tts, onBack = { navController.popBackStack() }, onNavigate = { newIndex -> navController.navigate("irregular_detail/$newIndex") { popUpTo("irregular_list") } })
+            // Se elimina onNavigate porque ahora se usa Swipe interno
+            ScreenB(verbIndex = index, viewModel = viewModel, tts = tts, onBack = { navController.popBackStack() })
         }
         composable("phrasal_list") {
             val viewModel: PhrasalVerbViewModel = viewModel(factory = object : ViewModelProvider.Factory { override fun <T : ViewModel> create(modelClass: Class<T>): T = PhrasalVerbViewModel(revenueRepository = revenueRepository) as T })
@@ -132,7 +99,8 @@ fun NavGraph(
         composable("phrasal_detail/{verbIndex}", arguments = listOf(navArgument("verbIndex") { type = NavType.IntType })) { backStackEntry ->
             val index = backStackEntry.arguments?.getInt("verbIndex") ?: 0
             val viewModel: PhrasalVerbViewModel = viewModel(factory = object : ViewModelProvider.Factory { override fun <T : ViewModel> create(modelClass: Class<T>): T = PhrasalVerbViewModel(revenueRepository = revenueRepository) as T })
-            PhrasalScreenB(verbIndex = index, viewModel = viewModel, tts = tts, onBack = { navController.popBackStack() }, onNavigate = { newIndex -> navController.navigate("phrasal_detail/$newIndex") { popUpTo("phrasal_list") } })
+            // Se elimina onNavigate porque ahora se usa Swipe interno
+            PhrasalScreenB(verbIndex = index, viewModel = viewModel, tts = tts, onBack = { navController.popBackStack() })
         }
     }
 }
