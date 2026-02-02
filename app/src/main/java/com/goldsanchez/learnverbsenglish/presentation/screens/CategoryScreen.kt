@@ -18,6 +18,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material.icons.rounded.WorkspacePremium
 import androidx.compose.material3.*
@@ -48,7 +49,8 @@ fun CategoryScreen(
     onIrregularClick: () -> Unit,
     onPhrasalClick: () -> Unit,
     onProfileClick: () -> Unit,
-    onStoriesClick: () -> Unit
+    onStoriesClick: () -> Unit,
+    onQuickLearnClick: () -> Unit
 ) {
     val isAdsRemoved by viewModel.isAdsRemoved.collectAsState()
     val learnedVerbs by viewModel.learnedVerbs.collectAsState()
@@ -161,7 +163,17 @@ fun CategoryScreen(
                 modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp)
             )
 
-            // Historias con Progreso Real
+            // MODO TIKTOK: Quick Learn
+            CategoryLearningCard(
+                title = "Quick Learn",
+                description = "Estudio rápido estilo TikTok",
+                icon = Icons.Default.Bolt,
+                accentColor = Color(0xFFFFD700), // Dorado/Rayo
+                onClick = onQuickLearnClick
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
             CategoryLearningCard(
                 title = "Historias Cortas",
                 description = "Lee y escucha historias reales",
@@ -176,7 +188,6 @@ fun CategoryScreen(
             Divider(color = Color.LightGray.copy(alpha = 0.5f))
             Spacer(modifier = Modifier.height(24.dp))
 
-            // Irregulares con Progreso Real (131)
             val learnedCountIrregular = learnedVerbs.intersect(viewModel.verbs.map { it.infinitive }.toSet()).size
             CategoryLearningCard(
                 title = "Verbos Irregulares",
@@ -190,7 +201,6 @@ fun CategoryScreen(
 
             Spacer(modifier = Modifier.height(20.dp))
 
-            // Phrasals con Progreso Real (100)
             CategoryLearningCard(
                 title = "Phrasal Verbs",
                 description = "Los 100 más usados en contexto",

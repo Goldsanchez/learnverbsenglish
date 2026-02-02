@@ -16,6 +16,7 @@ import com.goldsanchez.learnverbsenglish.data.AuthRepository
 import com.goldsanchez.learnverbsenglish.data.ProgressRepository
 import com.goldsanchez.learnverbsenglish.data.RevenueRepository
 import com.goldsanchez.learnverbsenglish.presentation.AuthViewModel
+import com.goldsanchez.learnverbsenglish.presentation.FlashcardViewModel
 import com.goldsanchez.learnverbsenglish.presentation.IrregularVerbViewModel
 import com.goldsanchez.learnverbsenglish.presentation.PhrasalVerbViewModel
 import com.goldsanchez.learnverbsenglish.presentation.StoryViewModel
@@ -79,7 +80,27 @@ fun NavGraph(
                 onIrregularClick = { navController.navigate("irregular_list") },
                 onPhrasalClick = { navController.navigate("phrasal_list") },
                 onProfileClick = { if (authRepository.currentUser.value == null) navController.navigate("login") else navController.navigate("profile") },
-                onStoriesClick = { navController.navigate("story_list") }
+                onStoriesClick = { navController.navigate("story_list") },
+                onQuickLearnClick = { navController.navigate("quick_learn") }
+            )
+        }
+        
+        composable("quick_learn") {
+            val flashViewModel: FlashcardViewModel = viewModel(
+                factory = object : ViewModelProvider.Factory {
+                    override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                        return FlashcardViewModel(
+                            progressRepository = progressRepository,
+                            authRepository = authRepository
+                        ) as T
+                    }
+                }
+            )
+            FlashcardScreen(
+                viewModel = flashViewModel,
+                isAdsRemoved = isAdsRemoved,
+                tts = tts,
+                onBack = { navController.popBackStack() }
             )
         }
         
